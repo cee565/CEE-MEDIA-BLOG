@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ceemedia.vercel.app/sitemap.xml

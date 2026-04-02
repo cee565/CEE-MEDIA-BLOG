@@ -1,0 +1,7 @@
+{
+  "name": "CEE MEDIA",
+  "description": "A modern campus platform for voting, blogging, and anonymous confessions.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
