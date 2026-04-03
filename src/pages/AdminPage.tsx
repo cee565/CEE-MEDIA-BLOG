@@ -70,8 +70,8 @@ const AdminDashboard = () => {
     hasKey: boolean;
     ping: boolean | 'checking';
   }>({
-    url: (import.meta as any).env.VITE_SUPABASE_URL || 'Not Set',
-    hasKey: !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY,
+    url: import.meta.env.VITE_SUPABASE_URL || 'Not Set',
+    hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
     ping: 'checking'
   });
 
@@ -2276,7 +2276,7 @@ const AdminPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const adminPass = (import.meta as any).env.VITE_ADMIN_PASSWORD || 'admin123';
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
     if (password === adminPass) {
       setIsAuthenticated(true);
       setError('');

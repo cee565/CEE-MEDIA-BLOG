@@ -95,7 +95,7 @@ const ConfessionsPage = () => {
     }
   };
 
-  const isSupabaseConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
