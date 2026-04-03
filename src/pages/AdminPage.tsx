@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup } from '../types';
-import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database } from 'lucide-react';
+import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff } from 'lucide-react';
 import { format, addHours, addDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie } from 'recharts';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -2272,12 +2272,14 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
 const AdminPage = () => {
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
-    if (password === adminPass) {
+    // Use trim() to avoid common copy-paste space issues, but only if the user didn't intentionally put spaces
+    if (password === adminPass || password.trim() === adminPass) {
       setIsAuthenticated(true);
       setError('');
     } else {
@@ -2301,23 +2303,44 @@ const AdminPage = () => {
             <p className="text-sm text-slate-500">Enter the secret password to continue.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-3">
-            <div className="space-y-1">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition-all text-center text-base tracking-widest"
-              />
-              {error && <p className="text-[10px] text-red-500 text-center font-bold">{error}</p>}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition-all text-center text-base tracking-widest font-mono"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-purple-600 transition-colors"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {error && (
+                <motion.p 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-[10px] text-red-500 text-center font-bold"
+                >
+                  {error}
+                </motion.p>
+              )}
             </div>
             <button
               type="submit"
-              className="w-full bg-slate-900 text-white p-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition-all text-sm"
+              className="w-full bg-slate-900 text-white p-4 rounded-2xl font-black shadow-xl hover:bg-slate-800 transition-all text-xs uppercase tracking-widest active:scale-[0.98]"
             >
               Unlock Dashboard
             </button>
+            <p className="text-[9px] text-slate-400 text-center mt-4">
+              Default password is <code className="bg-slate-100 px-1 rounded text-slate-600">admin123</code> if not set in Vercel.
+            </p>
           </form>
         </motion.div>
       </div>

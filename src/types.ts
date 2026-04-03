@@ -76,6 +76,7 @@ export interface TeamMember {
   role: string;
   image: string;
   likes?: number;
+  bio?: string;
   created_at: string;
 }
 
