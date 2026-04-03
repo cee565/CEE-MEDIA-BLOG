@@ -100,7 +100,10 @@ const Navbar = () => {
 };
 
 const App = () => {
+  const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
+
   useEffect(() => {
+    if (!isConfigured) return;
     console.log("CEE MEDIA App Initialized - v1.0.0");
     const trackVisitor = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -138,7 +141,39 @@ const App = () => {
     };
 
     trackVisitor();
-  }, []);
+  }, [isConfigured]);
+
+  if (!isConfigured) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-50 text-center space-y-6">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center text-red-600">
+          <Shield size={40} />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Configuration Required</h1>
+          <p className="text-slate-500 max-w-md mx-auto text-sm">
+            Your application is missing the required Supabase environment variables. 
+            Please add <code className="bg-slate-200 px-1 rounded">VITE_SUPABASE_URL</code> and <code className="bg-slate-200 px-1 rounded">VITE_SUPABASE_ANON_KEY</code> to your Vercel project settings.
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xl max-w-sm w-full text-left space-y-4">
+          <p className="text-xs font-bold text-slate-400 uppercase">How to fix:</p>
+          <ol className="text-xs text-slate-600 space-y-2 list-decimal list-inside font-medium">
+            <li>Go to your Vercel Dashboard</li>
+            <li>Settings &gt; Environment Variables</li>
+            <li>Add the variables from your Supabase dashboard</li>
+            <li>Redeploy your application</li>
+          </ol>
+        </div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-slate-900 text-white px-8 py-3 rounded-full font-black text-xs hover:scale-105 transition-all"
+        >
+          CHECK AGAIN
+        </button>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
