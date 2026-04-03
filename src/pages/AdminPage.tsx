@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
+import { Logo } from '../components/Logo';
 import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup } from '../types';
 import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff } from 'lucide-react';
 import { format, addHours, addDays, isAfter } from 'date-fns';
@@ -806,9 +807,10 @@ const AdminDashboard = () => {
       </AnimatePresence>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-          <LayoutDashboard className="mr-2 text-purple-600" /> Admin Dashboard
-        </h2>
+        <div className="flex items-center">
+          <Logo iconClassName="w-10 h-10" />
+          <h2 className="text-2xl font-bold text-slate-800 ml-3">Admin Dashboard</h2>
+        </div>
         <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto hide-scrollbar">
           {(['overview', 'poll_groups', 'polls', 'posts', 'messages', 'team', 'ads', 'comments', 'blog_comments'] as const).map((tab) => (
             <button
@@ -2289,21 +2291,21 @@ const AdminPage = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-4">
+      <div className="min-h-[80vh] flex items-center justify-center px-4 bg-slate-50/50">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white w-full max-w-md rounded-[1.5rem] card-shadow p-6 md:p-8 border border-slate-50 space-y-6"
+          className="bg-slate-900 w-full max-w-md rounded-[2rem] shadow-2xl p-8 md:p-10 border border-white/5 space-y-8"
         >
-          <div className="text-center space-y-1.5">
-            <div className="w-14 h-14 gradient-purple rounded-2xl flex items-center justify-center text-white mx-auto shadow-xl mb-3">
-              <Shield size={28} />
+          <div className="text-center space-y-3">
+            <div className="flex justify-center mb-6">
+              <Logo iconClassName="w-20 h-20" dark={true} />
             </div>
-            <h1 className="text-xl font-bold text-slate-900">Admin Access</h1>
-            <p className="text-sm text-slate-500">Enter the secret password to continue.</p>
+            <h1 className="text-2xl font-black text-white tracking-tight uppercase">Admin Access</h1>
+            <p className="text-sm text-slate-400 font-medium">Enter the secret password to continue.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <div className="relative">
                 <input
@@ -2311,7 +2313,7 @@ const AdminPage = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 focus:border-purple-400 focus:ring-2 focus:ring-purple-100 outline-none transition-all text-center text-base tracking-widest font-mono"
+                  className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-center text-base tracking-widest font-mono text-white placeholder:text-slate-600"
                   required
                 />
                 <button

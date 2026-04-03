@@ -303,7 +303,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
           </div>
           <div className="flex items-center space-x-1.5">
             <Logo iconClassName="w-3 h-3" showText={false} />
-            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
+            <div className="text-[8px] font-black text-black uppercase tracking-tighter">
               CEE MEDIA VERIFIED
             </div>
           </div>

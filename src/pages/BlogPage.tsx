@@ -171,8 +171,13 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
           loading="lazy"
         />
         <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          <div className="bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-700 flex items-center w-fit">
-            <Calendar size={10} className="mr-1" /> {format(new Date(post.created_at), 'MMM d, yyyy')}
+          <div className="flex items-center space-x-1.5">
+            <div className="bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-700 flex items-center w-fit">
+              <Calendar size={10} className="mr-1" /> {format(new Date(post.created_at), 'MMM d, yyyy')}
+            </div>
+            <div className="bg-green-500/90 backdrop-blur-md px-2 py-1 rounded-full text-[8px] font-black text-white flex items-center w-fit uppercase tracking-widest">
+              <div className="w-1 h-1 bg-white rounded-full animate-ping mr-1" /> Live
+            </div>
           </div>
         </div>
       </div>

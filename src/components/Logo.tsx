@@ -10,43 +10,30 @@ interface LogoProps {
 
 export const Logo: React.FC<LogoProps> = ({ 
   className = "", 
-  iconClassName = "w-10 h-10", 
+  iconClassName = "w-12 h-12", 
   textClassName = "", 
   showText = true,
-  dark = false 
+  dark = true 
 }) => (
   <div className={`flex items-center space-x-3 ${className}`}>
-    <div className={`relative ${iconClassName}`}>
-      <svg viewBox="0 0 100 100" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Outer Ring */}
-        <path 
-          d="M72 28C65 20 54 16 42 16C23 16 8 31 8 50C8 69 23 84 42 84C54 84 65 80 72 72" 
-          stroke="currentColor" 
-          strokeWidth="9" 
-          strokeLinecap="round" 
-        />
-        {/* Middle Ring */}
-        <path 
-          d="M62 40C58 35 52 33 42 33C32.6 33 25 40.6 25 50C25 59.4 32.6 67 42 67C52 67 58 65 62 60" 
-          stroke="currentColor" 
-          strokeWidth="9" 
-          strokeLinecap="round" 
-        />
-        {/* Inner Ring */}
-        <path 
-          d="M52 48C50 47 47 46 42 46C39.8 46 38 47.8 38 50C38 52.2 39.8 54 42 54C47 54 50 53 52 52" 
-          stroke="currentColor" 
-          strokeWidth="9" 
-          strokeLinecap="round" 
-        />
-        {/* Center Dot */}
-        <circle cx="82" cy="50" r="9" fill="currentColor" />
-      </svg>
+    <div className={`relative ${iconClassName} flex items-center justify-center overflow-hidden rounded-xl`}>
+      <img 
+        src="https://media.base44.com/images/public/user_69c58cd8140b12f4f7e0ba23/fed4f0662_Screenshot_20260326-200402.jpg" 
+        alt="CEE MEDIA" 
+        className="w-full h-full object-cover scale-[1.8]"
+        style={{ 
+          mixBlendMode: dark ? 'screen' : 'multiply',
+          filter: dark 
+            ? 'invert(1) brightness(2) contrast(1.2)' // Pure white logo
+            : 'grayscale(1) brightness(0)' // Pure black logo
+        }}
+        referrerPolicy="no-referrer"
+      />
     </div>
     {showText && (
-      <div className={`flex flex-col justify-center ${dark ? 'text-white' : 'text-slate-900'} ${textClassName}`}>
-        <span className="font-black text-2xl tracking-tighter leading-none">CEE</span>
-        <span className="font-bold text-[10px] tracking-[0.6em] uppercase opacity-80 leading-none mt-1 ml-0.5">MEDIA</span>
+      <div className={`flex flex-col justify-center ${dark ? 'text-white' : 'text-black'} ${textClassName}`}>
+        <span className="font-black text-2xl md:text-3xl tracking-tighter leading-none">CEE</span>
+        <span className="font-black text-[12px] md:text-[14px] tracking-[0.4em] uppercase leading-none mt-1">MEDIA</span>
       </div>
     )}
   </div>

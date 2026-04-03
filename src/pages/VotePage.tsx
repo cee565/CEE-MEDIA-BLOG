@@ -117,14 +117,23 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
 
     setIsSubmitting(true);
     try {
-      const updatedVotes = { ...poll.votes };
+      // Fetch latest data to minimize race conditions for high-volume voting
+      const { data: currentPoll, error: fetchError } = await supabase
+        .from('polls')
+        .select('votes, total_votes')
+        .eq('id', poll.id)
+        .single();
+      
+      if (fetchError) throw fetchError;
+
+      const updatedVotes = { ...(currentPoll?.votes || {}) };
       updatedVotes[tempSelected] = (updatedVotes[tempSelected] || 0) + 1;
 
       const { error } = await supabase
         .from('polls')
         .update({
           votes: updatedVotes,
-          total_votes: (poll.total_votes || 0) + 1
+          total_votes: (currentPoll?.total_votes || 0) + 1
         })
         .eq('id', poll.id);
 
@@ -267,6 +276,12 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
           <div className="space-y-3 flex-1">
             <div className="space-y-2">
               <div className="flex items-center space-x-2.5">
+                {!isEnded && (
+                  <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full border border-green-500/20">
+                    <div className="w-1 h-1 bg-green-600 rounded-full animate-ping" />
+                    <span className="text-[7px] font-black uppercase tracking-widest">Live</span>
+                  </div>
+                )}
                 <div className="w-1 h-6 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-200" />
                 <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-[1.1] tracking-tight drop-shadow-sm">
                   {poll.question}
@@ -547,7 +562,19 @@ const VotePage = () => {
         if (payload.eventType === 'INSERT') {
           setPolls(prev => [payload.new as Poll, ...prev]);
         } else if (payload.eventType === 'UPDATE') {
-          setPolls(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+          // Show real-time notification for new votes
+          setPolls(prev => {
+            const existingPoll = prev.find(p => p.id === payload.new.id);
+            if (existingPoll && payload.new.total_votes > (existingPoll.total_votes || 0)) {
+              // Only show if it's a significant update or throttle it
+              toast.success('Live Vote!', {
+                description: `Someone just voted on: ${payload.new.question}`,
+                duration: 2000,
+                icon: <TrendingUp size={14} className="text-green-500" />
+              });
+            }
+            return prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p);
+          });
         } else if (payload.eventType === 'DELETE') {
           setPolls(prev => prev.filter(p => payload.old && p.id !== payload.old.id));
         }

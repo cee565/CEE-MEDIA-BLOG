@@ -5,7 +5,7 @@ import { Home, Vote, BookOpen, MessageSquare, Shield, Menu, X, TrendingUp, Zap, 
 import { WhatsAppIcon, TikTokIcon, XIcon } from './components/BrandIcons';
 import { supabase } from './supabase';
 import { format } from 'date-fns';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 import Logo from './components/Logo';
 import ScrollToTop from './components/ScrollToTop';
@@ -33,23 +33,23 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-white/70 backdrop-blur-xl z-50 border-b border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)]">
+    <nav className="fixed top-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl z-50 border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center group transition-transform hover:scale-105 active:scale-95">
-            <Logo iconClassName="w-10 h-10" />
+            <Logo iconClassName="w-14 h-14" dark={true} />
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
+          <div className="hidden md:flex items-center space-x-1 bg-white/5 p-1 rounded-2xl border border-white/10">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-black transition-all duration-300 ${
                   location.pathname === link.path 
-                    ? 'bg-white text-purple-600 shadow-sm scale-105' 
-                    : 'text-slate-500 hover:text-purple-500 hover:bg-white/50'
+                    ? 'bg-white text-slate-900 shadow-sm scale-105' 
+                    : 'text-slate-400 hover:text-white hover:bg-white/10'
                 }`}
               >
                 <link.icon size={16} strokeWidth={2.5} />
@@ -61,7 +61,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-3 rounded-2xl text-slate-600 hover:bg-slate-100 transition-colors"
+            className="md:hidden p-3 rounded-2xl text-slate-300 hover:bg-white/10 transition-colors"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -75,7 +75,7 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-white/90 backdrop-blur-xl border-b border-slate-100 px-4 pt-2 pb-8 space-y-2 overflow-hidden"
+            className="md:hidden bg-slate-900/95 backdrop-blur-xl border-b border-white/10 px-4 pt-2 pb-8 space-y-2 overflow-hidden"
           >
             {navLinks.map((link) => (
               <Link
@@ -84,8 +84,8 @@ const Navbar = () => {
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center space-x-4 p-4 rounded-2xl text-base font-black transition-all ${
                   location.pathname === link.path 
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-200 scale-[1.02]' 
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-white text-slate-900 shadow-lg scale-[1.02]' 
+                    : 'text-slate-400 hover:bg-white/5'
                 }`}
               >
                 <link.icon size={22} strokeWidth={2.5} />
@@ -105,6 +105,39 @@ const App = () => {
   useEffect(() => {
     if (!isConfigured) return;
     console.log("CEE MEDIA App Initialized - v1.0.0");
+    
+    // Global real-time notifications
+    const globalChannel = supabase
+      .channel('global_notifications')
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'polls' }, (payload: any) => {
+        toast.info(`New Poll: ${payload.new.question}`, {
+          description: "Go cast your vote now!",
+          action: {
+            label: "Vote",
+            onClick: () => window.location.href = '/vote'
+          }
+        });
+      })
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'posts' }, (payload: any) => {
+        toast.info(`New Blog Post: ${payload.new.title}`, {
+          description: "Read the latest campus gist!",
+          action: {
+            label: "Read",
+            onClick: () => window.location.href = '/blog'
+          }
+        });
+      })
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages', filter: 'approved=eq.true' }, (payload: any) => {
+        toast.info("New Confession Added!", {
+          description: "Someone just shared a secret...",
+          action: {
+            label: "View",
+            onClick: () => window.location.href = '/confessions'
+          }
+        });
+      })
+      .subscribe();
+
     const trackVisitor = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       
@@ -141,6 +174,10 @@ const App = () => {
     };
 
     trackVisitor();
+
+    return () => {
+      supabase.removeChannel(globalChannel);
+    };
   }, [isConfigured]);
 
   if (!isConfigured) {
@@ -206,42 +243,42 @@ const App = () => {
             </React.Suspense>
           </main>
           
-          <footer className="bg-white border-t border-slate-100 py-8 mt-8">
+          <footer className="bg-slate-900 border-t border-white/5 py-12 mt-12 text-white">
             <div className="max-w-7xl mx-auto px-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center md:text-left">
-                <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-center text-center md:text-left">
+                <div className="space-y-4">
                   <Link to="/" className="flex items-center justify-center md:justify-start group">
-                    <Logo iconClassName="w-7 h-7" textClassName="text-left" />
+                    <Logo iconClassName="w-12 h-12" textClassName="text-left" dark={true} />
                   </Link>
-                  <p className="text-slate-500 text-xs">Your #1 source for campus news, trends, and anonymous confessions.</p>
+                  <p className="text-slate-400 text-sm max-w-xs mx-auto md:mx-0">Your #1 source for campus news, trends, and anonymous confessions.</p>
                 </div>
 
-                <div className="flex flex-col items-center space-y-3">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Connect With Us</h4>
-                  <div className="flex space-x-4">
-                    <a href="https://whatsapp.com/channel/0029Vb7LSXU11ulKZ4e1E738" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#25D366] transition-colors">
-                      <WhatsAppIcon size={18} />
+                <div className="flex flex-col items-center space-y-4">
+                  <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Connect With Us</h4>
+                  <div className="flex space-x-6">
+                    <a href="https://whatsapp.com/channel/0029Vb7LSXU11ulKZ4e1E738" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#25D366] transition-all hover:scale-110">
+                      <WhatsAppIcon size={22} />
                     </a>
-                    <a href="https://tiktok.com/@ceemedia4" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-black transition-colors">
-                      <TikTokIcon size={18} />
+                    <a href="https://tiktok.com/@ceemedia4" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
+                      <TikTokIcon size={22} />
                     </a>
-                    <a href="https://x.com/cee_studio12?s=09" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-black transition-colors">
-                      <XIcon size={16} />
+                    <a href="https://x.com/cee_studio12?s=09" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
+                      <XIcon size={20} />
                     </a>
                   </div>
                 </div>
 
-                <div className="space-y-3 text-center md:text-right">
-                  <h4 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Support</h4>
-                  <p className="text-slate-500 text-xs">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-600 font-medium">ceemedia9@gmail.com</a></p>
-                  <Link to="/admin" className="inline-flex items-center text-slate-300 hover:text-purple-500 transition-colors">
-                    <Shield size={12} className="mr-1" />
-                    <span className="text-[9px] font-bold uppercase">Admin</span>
+                <div className="space-y-4 text-center md:text-right">
+                  <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
+                  <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
+                  <Link to="/admin" className="inline-flex items-center text-slate-500 hover:text-white transition-colors">
+                    <Shield size={14} className="mr-2" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Admin Access</span>
                   </Link>
                 </div>
               </div>
-              <div className="mt-8 pt-6 border-t border-slate-50 text-center">
-                <p className="text-slate-400 text-[9px] font-bold uppercase tracking-widest">© 2026 CEE MEDIA. All rights reserved.</p>
+              <div className="mt-12 pt-8 border-t border-white/5 text-center">
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA. All rights reserved.</p>
               </div>
             </div>
           </footer>

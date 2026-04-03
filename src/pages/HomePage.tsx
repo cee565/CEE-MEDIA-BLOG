@@ -35,6 +35,13 @@ const HomePage = () => {
     };
   };
 
+  const [stats, setStats] = useState({
+    visitors: 0,
+    votes: 0,
+    confessions: 0,
+    posts: 0
+  });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -62,15 +69,37 @@ const HomePage = () => {
           .order('created_at', { ascending: false })
           .limit(1);
         if (messages && messages.length > 0) setLatestMessage(messages[0] as Message);
+
+        // Fetch counts for stats
+        const [
+          { data: pollData },
+          { count: postCount },
+          { count: messageCount },
+          { data: analyticsData }
+        ] = await Promise.all([
+          supabase.from('polls').select('total_votes'),
+          supabase.from('posts').select('*', { count: 'exact', head: true }),
+          supabase.from('messages').select('*', { count: 'exact', head: true }).eq('approved', true),
+          supabase.from('analytics').select('total_visitors').eq('id', 'main').single()
+        ]);
+
+        const totalVotes = (pollData as any[])?.reduce((acc, p) => acc + (p.total_votes || 0), 0) || 0;
+
+        setStats({
+          visitors: analyticsData?.total_visitors || 0,
+          votes: totalVotes,
+          confessions: messageCount || 0,
+          posts: postCount || 0
+        });
+
       } catch (e) {
         console.error("Home data fetch failed", e);
-        toast.error("Failed to load latest campus updates.");
       }
     };
     fetchData();
 
     // Real-time subscriptions
-    const channels = ['polls', 'posts', 'messages'].map(table => 
+    const channels = ['polls', 'posts', 'messages', 'analytics'].map(table => 
       supabase.channel(`${table}_home_channel`).on('postgres_changes' as any, { event: '*', schema: 'public', table }, () => fetchData()).subscribe()
     );
 
@@ -125,36 +154,36 @@ const HomePage = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-4 space-y-6 relative z-10">
       {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 p-6 md:p-10 text-white text-center space-y-6 shadow-2xl border border-white/20">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-white/10 blur-[80px] rounded-full -mr-36 -mt-36 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-pink-500/10 blur-[80px] rounded-full -ml-36 -mb-36 animate-pulse"></div>
+      <section className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 p-6 md:p-12 text-white text-center space-y-8 shadow-2xl border border-white/20">
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/10 blur-[100px] rounded-full -mr-48 -mt-48 animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-pink-500/10 blur-[100px] rounded-full -ml-48 -mb-48 animate-pulse"></div>
         
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center space-x-2 bg-white/15 backdrop-blur-xl border border-white/25 px-4 py-2 rounded-full text-[10px] font-black tracking-[0.2em]"
+          className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-2.5 rounded-full text-[11px] font-black tracking-[0.3em] text-white"
         >
-          <Logo iconClassName="w-4 h-4" showText={false} />
-          <span className="uppercase text-[8px]">CEE MEDIA OFFICIAL</span>
+          <Logo iconClassName="w-12 h-12" showText={false} dark={true} />
+          <span className="uppercase text-[9px]">CEE MEDIA OFFICIAL</span>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <h1 className="flex flex-col items-center justify-center leading-none select-none">
-            <span className="text-4xl md:text-6xl font-black tracking-tighter uppercase drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">CEE</span>
-            <span className="text-base md:text-xl font-black tracking-[0.8em] uppercase text-white/90 -mt-1 md:-mt-3 ml-3 drop-shadow-lg">MEDIA</span>
+          <h1 className="flex flex-col items-center justify-center leading-none select-none text-white">
+            <span className="text-7xl md:text-9xl font-black tracking-tighter uppercase drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">CEE</span>
+            <span className="text-2xl md:text-4xl font-black tracking-[0.8em] uppercase text-white/90 -mt-2 md:-mt-4 ml-4 drop-shadow-lg">MEDIA</span>
           </h1>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             <motion.p 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-sm md:text-lg text-white max-w-4xl mx-auto font-black tracking-tight uppercase leading-tight drop-shadow-md"
+              className="text-base md:text-2xl text-white max-w-4xl mx-auto font-black tracking-tight uppercase leading-tight drop-shadow-md"
             >
               Your Voice, Your Campus, Your Story.
             </motion.p>
@@ -162,7 +191,7 @@ const HomePage = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-purple-100/80 text-[10px] md:text-sm font-medium max-w-2xl mx-auto"
+              className="text-purple-100/80 text-[11px] md:text-base font-medium max-w-2xl mx-auto"
             >
               The heartbeat of campus culture. Stay connected, stay informed, and make your mark.
             </motion.p>
@@ -173,13 +202,13 @@ const HomePage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="flex flex-col sm:flex-row justify-center gap-3 pt-2"
+          className="flex flex-col sm:flex-row justify-center gap-4 pt-4"
         >
-          <Link to="/vote" className="group relative bg-white text-purple-600 px-8 py-3 rounded-full font-black shadow-[0_20px_50px_rgba(255,255,255,0.2)] hover:shadow-[0_25px_60px_rgba(255,255,255,0.3)] transition-all active:scale-95 flex items-center justify-center overflow-hidden">
-            <span className="relative z-10 text-xs">START VOTING</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-100 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <Link to="/vote" className="group relative bg-white text-purple-600 px-10 py-4 rounded-full font-black shadow-[0_20px_50px_rgba(255,255,255,0.2)] hover:shadow-[0_25px_60px_rgba(255,255,255,0.3)] transition-all active:scale-95 flex items-center justify-center overflow-hidden">
+            <span className="relative z-10 text-sm">START VOTING</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </Link>
-          <Link to="/blog" className="bg-white/15 backdrop-blur-xl border border-white/25 text-white px-8 py-3 rounded-full font-black hover:bg-white/25 transition-all active:scale-95 flex items-center justify-center shadow-lg text-xs">
+          <Link to="/blog" className="bg-white/10 backdrop-blur-xl border border-white/20 text-white px-10 py-4 rounded-full font-black hover:bg-white/20 transition-all active:scale-95 flex items-center justify-center shadow-lg text-sm">
             EXPLORE BLOG
           </Link>
         </motion.div>
@@ -385,10 +414,10 @@ const HomePage = () => {
       {/* Stats Section */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Active Users', value: '12K+', icon: Users, color: 'from-blue-500 to-indigo-600' },
-          { label: 'Votes Cast', value: '100+', icon: Activity, color: 'from-purple-500 to-pink-600' },
-          { label: 'Confessions', value: '200 +', icon: MessageCircle, color: 'from-orange-400 to-red-500' },
-          { label: 'Campus Gists', value: '800+', icon: Zap, color: 'from-green-400 to-emerald-600' },
+          { label: 'Active Users', value: `${stats.visitors.toLocaleString()}+`, icon: Users, color: 'from-blue-500 to-indigo-600' },
+          { label: 'Votes Cast', value: `${stats.votes.toLocaleString()}+`, icon: Activity, color: 'from-purple-500 to-pink-600' },
+          { label: 'Confessions', value: `${stats.confessions.toLocaleString()}+`, icon: MessageCircle, color: 'from-orange-400 to-red-500' },
+          { label: 'Campus Gists', value: `${stats.posts.toLocaleString()}+`, icon: Zap, color: 'from-green-400 to-emerald-600' },
         ].map((stat, idx) => (
           <motion.div
             key={stat.label}

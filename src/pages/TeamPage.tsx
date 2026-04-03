@@ -148,30 +148,30 @@ const TeamPage = () => {
 
   return (
     <div className="min-h-screen pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-12">
         {/* Header */}
-        <div className="text-center space-y-1.5">
+        <div className="text-center space-y-6 bg-slate-900 p-12 rounded-[2.5rem] shadow-2xl border border-white/5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center space-x-1.5 bg-pink-100 text-pink-600 px-2.5 py-1 rounded-full text-[10px] font-bold"
+            className="inline-flex items-center space-x-1.5 bg-white/10 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]"
           >
-            <Users size={12} />
+            <Users size={14} />
             <span>Meet the Visionaries</span>
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight"
+            className="text-3xl sm:text-5xl font-black text-white tracking-tighter uppercase"
           >
-            The Minds Behind <span className="text-pink-600">CEE MEDIA</span>
+            The Minds Behind <span className="text-purple-400">CEE MEDIA</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-slate-500 text-xs sm:text-sm max-w-2xl mx-auto"
+            className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto font-medium"
           >
             A diverse group of creators, thinkers, and storytellers dedicated to bringing you the best in entertainment and news.
           </motion.p>
