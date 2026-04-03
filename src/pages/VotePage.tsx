@@ -187,7 +187,7 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
     }
   };
 
-  const shareUrl = `${window.location.origin}/vote?id=${poll.id}`;
+  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/vote?id=${poll.id}`;
   const shareText = `Vote on this poll on CEE MEDIA: "${poll.question}"`;
 
   const copyToClipboard = (silent = false) => {

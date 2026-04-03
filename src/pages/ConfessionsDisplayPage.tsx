@@ -140,7 +140,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
     }
   };
 
-  const shareUrl = `${window.location.origin}/confessions?id=${message.id}`;
+  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/confessions?id=${message.id}`;
   const shareText = `Check out this anonymous confession on CEE MEDIA: "${message.content.substring(0, 50)}..."`;
 
   const copyToClipboard = () => {

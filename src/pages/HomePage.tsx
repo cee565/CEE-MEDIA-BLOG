@@ -17,7 +17,8 @@ const HomePage = () => {
   const [copied, setCopied] = useState(false);
 
   const handleShare = (type: string, id: string, title: string) => {
-    const url = `${window.location.origin}/${type}?id=${id}`;
+    const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+    const url = `${baseUrl}/${type}?id=${id}`;
     const text = `Check out this ${type} on CEE MEDIA: "${title}"`;
 
     return {
@@ -319,6 +320,31 @@ const HomePage = () => {
               >
                 <Share2 size={14} />
               </button>
+              <AnimatePresence>
+                {showShareMenu === `post-${hotPost?.id}` && hotPost && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                  >
+                    <div className="p-1.5 space-y-1">
+                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).copy(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
+                        {copied ? <Check size={12} className="text-green-500" /> : <LinkIcon size={12} />}
+                        <span className="text-[9px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
+                      </button>
+                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).twitter(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
+                        <XIcon size={12} className="text-black" />
+                        <span className="text-[9px] font-bold">X</span>
+                      </button>
+                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).whatsapp(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
+                        <WhatsAppIcon size={12} className="text-green-500" />
+                        <span className="text-[9px] font-bold">WhatsApp</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </motion.div>

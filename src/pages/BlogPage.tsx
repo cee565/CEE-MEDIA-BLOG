@@ -130,7 +130,7 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
     }
   };
 
-  const shareUrl = `${window.location.origin}/blog?id=${post.id}`;
+  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/blog?id=${post.id}`;
   const shareText = `Check out this blog post on CEE MEDIA: "${post.title}"`;
 
   const copyToClipboard = () => {
