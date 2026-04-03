@@ -103,9 +103,10 @@ CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = '
 DROP POLICY IF EXISTS "Public Delete" ON storage.objects;
 CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'media');
 
--- Enable Row Level Security (RLS) for all tables
+-- 10. Enable Row Level Security (RLS) for all tables
 ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE poll_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE team ENABLE ROW LEVEL SECURITY;
@@ -113,56 +114,67 @@ ALTER TABLE message_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ads ENABLE ROW LEVEL SECURITY;
 
--- Create policies for public access (adjust as needed for security)
--- For now, we'll allow public read and authenticated write (simulated by admin password in app)
--- In a real app, you'd use Supabase Auth
-
+-- Create policies for public access
+-- Analytics
 DROP POLICY IF EXISTS "Public Read" ON analytics;
 CREATE POLICY "Public Read" ON analytics FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON polls;
-CREATE POLICY "Public Read" ON polls FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON posts;
-CREATE POLICY "Public Read" ON posts FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON messages;
-CREATE POLICY "Public Read" ON messages FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON team;
-CREATE POLICY "Public Read" ON team FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON message_comments;
-CREATE POLICY "Public Read" ON message_comments FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON post_comments;
-CREATE POLICY "Public Read" ON post_comments FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read" ON ads;
-CREATE POLICY "Public Read" ON ads FOR SELECT USING (true);
-
--- Allow all operations for now (since we're using the anon key and managing auth in-app)
--- WARNING: This is for development. In production, use proper RLS policies.
 DROP POLICY IF EXISTS "Allow All" ON analytics;
 CREATE POLICY "Allow All" ON analytics FOR ALL USING (true) WITH CHECK (true);
 
+-- Polls
+DROP POLICY IF EXISTS "Public Read" ON polls;
+CREATE POLICY "Public Read" ON polls FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON polls;
 CREATE POLICY "Allow All" ON polls FOR ALL USING (true) WITH CHECK (true);
 
+-- Poll Groups
+DROP POLICY IF EXISTS "Public Read" ON poll_groups;
+CREATE POLICY "Public Read" ON poll_groups FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow All" ON poll_groups;
+CREATE POLICY "Allow All" ON poll_groups FOR ALL USING (true) WITH CHECK (true);
+
+-- Posts
+DROP POLICY IF EXISTS "Public Read" ON posts;
+CREATE POLICY "Public Read" ON posts FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON posts;
 CREATE POLICY "Allow All" ON posts FOR ALL USING (true) WITH CHECK (true);
 
+-- Messages
+DROP POLICY IF EXISTS "Public Read" ON messages;
+CREATE POLICY "Public Read" ON messages FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON messages;
 CREATE POLICY "Allow All" ON messages FOR ALL USING (true) WITH CHECK (true);
 
+-- Team
+DROP POLICY IF EXISTS "Public Read" ON team;
+CREATE POLICY "Public Read" ON team FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON team;
 CREATE POLICY "Allow All" ON team FOR ALL USING (true) WITH CHECK (true);
 
+-- Message Comments
+DROP POLICY IF EXISTS "Public Read" ON message_comments;
+CREATE POLICY "Public Read" ON message_comments FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON message_comments;
 CREATE POLICY "Allow All" ON message_comments FOR ALL USING (true) WITH CHECK (true);
 
+-- Post Comments
+DROP POLICY IF EXISTS "Public Read" ON post_comments;
+CREATE POLICY "Public Read" ON post_comments FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON post_comments;
 CREATE POLICY "Allow All" ON post_comments FOR ALL USING (true) WITH CHECK (true);
 
+-- Ads
+DROP POLICY IF EXISTS "Public Read" ON ads;
+CREATE POLICY "Public Read" ON ads FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Allow All" ON ads;
 CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);
+
+-- Storage Policies
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'media');
+DROP POLICY IF EXISTS "Public Upload" ON storage.objects;
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media');
+DROP POLICY IF EXISTS "Public Update" ON storage.objects;
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = 'media');
+DROP POLICY IF EXISTS "Public Delete" ON storage.objects;
+CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'media');

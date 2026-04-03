@@ -101,6 +101,7 @@ const Navbar = () => {
 
 const App = () => {
   useEffect(() => {
+    console.log("CEE MEDIA App Initialized - v1.0.0");
     const trackVisitor = async () => {
       const today = format(new Date(), 'yyyy-MM-dd');
       
@@ -147,8 +148,15 @@ const App = () => {
           <Navbar />
           <main className="flex-grow">
             <React.Suspense fallback={
-              <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-purple-100 rounded-full"></div>
+                  <div className="absolute top-0 left-0 w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div className="flex flex-col items-center space-y-1">
+                  <Logo iconClassName="w-6 h-6" showText={false} />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Loading Experience...</span>
+                </div>
               </div>
             }>
               <Routes>

@@ -418,7 +418,7 @@ const AdminDashboard = () => {
 
   const PollAnalysis = ({ poll }: { poll: Poll }) => {
     const data = poll.options.map((opt, i) => ({
-      name: opt,
+      name: typeof opt === 'string' ? opt : opt.text,
       votes: poll.votes[i] || 0
     }));
 
@@ -1139,6 +1139,49 @@ CREATE POLICY "Allow All" ON poll_groups FOR ALL USING (true) WITH CHECK (true);
                         showNotification("SQL copied to clipboard", "success");
                       }}
                       className="w-full py-2 bg-green-600 hover:bg-green-500 text-white text-xs font-bold rounded-xl transition-colors"
+                    >
+                      Copy SQL
+                    </button>
+                  </div>
+                )}
+                {missingTables.some(t => t === 'poll_groups') && (
+                  <div className="p-4 bg-slate-900 rounded-3xl space-y-3 border border-slate-800">
+                    <p className="text-[10px] text-purple-400 font-bold uppercase">SQL Fix for Poll Groups:</p>
+                    <code className="block text-[9px] text-slate-300 font-mono break-all bg-slate-800 p-3 rounded-xl border border-slate-700 whitespace-pre-wrap">
+{`CREATE TABLE IF NOT EXISTS poll_groups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  image TEXT,
+  is_ended BOOLEAN DEFAULT FALSE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE poll_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON poll_groups;
+DROP POLICY IF EXISTS "Allow All" ON poll_groups;
+CREATE POLICY "Public Read" ON poll_groups FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON poll_groups FOR ALL USING (true) WITH CHECK (true);`}
+                    </code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS poll_groups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  image TEXT,
+  is_ended BOOLEAN DEFAULT FALSE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE poll_groups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON poll_groups;
+DROP POLICY IF EXISTS "Allow All" ON poll_groups;
+CREATE POLICY "Public Read" ON poll_groups FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON poll_groups FOR ALL USING (true) WITH CHECK (true);`);
+                        showNotification("SQL copied to clipboard", "success");
+                      }}
+                      className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition-colors"
                     >
                       Copy SQL
                     </button>
