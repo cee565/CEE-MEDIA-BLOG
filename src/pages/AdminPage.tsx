@@ -30,7 +30,7 @@ const AdminDashboard = () => {
   // Form states
   const [newPollGroup, setNewPollGroup] = useState({ title: '', description: '', image: null as File | null, duration: 'never', custom_expires_at: '' });
   const [newPoll, setNewPoll] = useState({ question: '', description: '', group_id: '', options: [{ text: '', image: null as File | null }, { text: '', image: null as File | null }], image: null as File | null, duration: 'never', custom_expires_at: '' });
-  const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '' });
+  const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '', category: 'Gist' });
   const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '' });
   const [newAd, setNewAd] = useState({ name: '', media_url: '', media_type: 'image' as 'image' | 'video', link_url: '', description: '', mediaFile: null as File | null });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -471,7 +471,7 @@ const AdminDashboard = () => {
         <div className="space-y-3">
           <h4 className="text-sm font-bold text-slate-500 uppercase">Detailed Breakdown</h4>
           {data.map((item, i) => {
-            const percentage = poll.total_votes > 0 ? Math.round((item.votes / poll.total_votes) * 100) : 0;
+            const percentage = poll.total_votes > 0 ? ((item.votes / poll.total_votes) * 100).toFixed(1) : '0.0';
             return (
               <div key={i} className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100">
                 <div className="flex items-center space-x-3">
@@ -479,12 +479,16 @@ const AdminDashboard = () => {
                   <span className="text-sm font-medium text-slate-700">{item.name}</span>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <span className="text-sm font-bold text-slate-900">{item.votes} votes</span>
-                  <span className="text-xs font-black text-slate-400 w-10 text-right">{percentage}%</span>
+                  <span className="text-sm font-bold text-slate-900">{item.votes.toLocaleString()} votes</span>
+                  <span className="text-xs font-black text-slate-400 w-12 text-right">{percentage}%</span>
                 </div>
               </div>
             );
           })}
+          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center px-3">
+            <span className="text-sm font-black text-slate-900 uppercase tracking-wider">Total Overall</span>
+            <span className="text-lg font-black text-purple-600">{poll.total_votes.toLocaleString()} Votes</span>
+          </div>
         </div>
       </div>
     );
@@ -552,6 +556,7 @@ const AdminDashboard = () => {
         content: newPost.content,
         image: imageUrl,
         author_id: newPost.author_id || null,
+        category: newPost.category,
         likes: 0
       }).select().single();
 
@@ -565,7 +570,7 @@ const AdminDashboard = () => {
       }
 
       showNotification("Post created successfully", "success");
-      setNewPost({ title: '', author: '', content: '', image: null, author_id: '' });
+      setNewPost({ title: '', author: '', content: '', image: null, author_id: '', category: 'Gist' });
     } catch (e) {
       console.error("Post creation failed", e);
       showNotification("Failed to create post", "error");
@@ -1805,7 +1810,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 text-sm"
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-bold text-slate-400 ml-2 uppercase tracking-wider">Author Name (Display)</label>
                   <input
@@ -1833,6 +1838,18 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                     <option value="">Select Team Member (Optional)</option>
                     {team.map(member => (
                       <option key={member.id} value={member.id}>{member.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-400 ml-2 uppercase tracking-wider">Category</label>
+                  <select
+                    value={newPost.category}
+                    onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-bold text-slate-600 text-xs"
+                  >
+                    {['Gist', 'News', 'Events', 'Drama', 'Trends'].map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
                 </div>
@@ -1885,6 +1902,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                       author: post.author, 
                       content: post.content, 
                       image: post.image, 
+                      category: post.category || 'Gist',
                       likes: post.likes
                     })}
                     className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-colors"

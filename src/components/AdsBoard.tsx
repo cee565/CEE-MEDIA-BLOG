@@ -12,16 +12,8 @@ const AdsBoard: React.FC = () => {
   useEffect(() => {
     fetchActiveAds();
 
-    const subscription = supabase
-      .channel('ads_changes')
-      .on('postgres_changes' as any, { event: '*', table: 'ads' }, () => {
-        fetchActiveAds();
-      })
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    // No real-time for ads to save resources
+    return () => {};
   }, []);
 
   useEffect(() => {

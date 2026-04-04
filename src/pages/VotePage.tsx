@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { AnimatePresence } from 'motion/react';
 import { isAfter, intervalToDuration } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
+import MetaTags from '../components/MetaTags';
 
 const TimerBox = ({ value, label, size = 'md' }: { value: number | string, label: string, size?: 'sm' | 'md' }) => (
   <div className="flex flex-col items-center">
@@ -386,12 +387,8 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
           const optionText = typeof option === 'string' ? option : option.text;
           const optionImage = typeof option === 'string' ? null : option.image;
           const voteCount = poll.votes[index] || 0;
-          const percentage = poll.total_votes > 0 ? Math.round((voteCount / poll.total_votes) * 100) : 0;
           const isSelected = selected === index;
           const isPending = tempSelected === index;
-
-          const maxVotes = Math.max(...Object.values(poll.votes), 0);
-          const isTopPick = showResults && voteCount === maxVotes && voteCount > 0;
 
           return (
             <button
@@ -410,22 +407,6 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
                     : ''
               }`}
             >
-              {/* Progress Bar Background */}
-              {showResults && (
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percentage}%` }}
-                  transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
-                  className={`absolute top-0 left-0 h-full ${
-                    isSelected 
-                      ? 'bg-gradient-to-r from-purple-600/15 to-purple-400/5' 
-                      : isTopPick
-                        ? 'bg-gradient-to-r from-amber-500/10 to-amber-200/5'
-                        : 'bg-gradient-to-r from-slate-200/40 to-slate-100/10'
-                  }`}
-                />
-              )}
-
               <div className="relative flex justify-between items-center z-10">
                 <div className="flex items-center space-x-4">
                   {!showResults && (
@@ -445,16 +426,10 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
                       <span className={`text-lg md:text-xl font-black tracking-tight leading-tight ${isSelected || isPending ? 'text-purple-900' : 'text-slate-900'}`}>
                         {optionText}
                       </span>
-                      {isTopPick && (
-                        <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[7px] font-black uppercase tracking-widest border border-amber-200 flex items-center space-x-1">
-                          <TrendingUp size={8} />
-                          <span>Top Pick</span>
-                        </span>
-                      )}
                     </div>
                     {showResults && (
                       <div className="flex items-center space-x-2">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                        <span className="text-sm font-black text-slate-600 uppercase tracking-[0.1em]">
                           {voteCount.toLocaleString()} {voteCount === 1 ? 'Vote' : 'Votes'}
                         </span>
                         {isSelected && (
@@ -464,23 +439,14 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
                     )}
                   </div>
                 </div>
-                {showResults && (
-                  <div className="flex items-center space-x-4">
-                    <div className="flex flex-col items-end">
-                      <span className={`text-2xl md:text-3xl font-black ${isSelected ? 'text-purple-600' : isTopPick ? 'text-amber-600' : 'text-slate-700'}`}>
-                        {percentage}%
-                      </span>
-                    </div>
-                    {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0, rotate: -90 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        className="bg-purple-600 p-2 rounded-full shadow-xl shadow-purple-200"
-                      >
-                        <CheckCircle2 size={20} className="text-white" />
-                      </motion.div>
-                    )}
-                  </div>
+                {showResults && isSelected && (
+                  <motion.div
+                    initial={{ scale: 0, rotate: -90 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    className="bg-purple-600 p-2 rounded-full shadow-xl shadow-purple-200"
+                  >
+                    <CheckCircle2 size={20} className="text-white" />
+                  </motion.div>
                 )}
               </div>
             </button>
@@ -520,6 +486,10 @@ const VotePage = () => {
   const [selectedGroup, setSelectedGroup] = useState<PollGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const pollId = searchParams.get('id');
+
+  // Find the specific poll if ID is provided in URL
+  const sharedPoll = pollId ? polls.find(p => p.id === pollId) : null;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -555,48 +525,33 @@ const VotePage = () => {
 
     fetchData();
 
-    // Real-time subscription
+    // Real-time subscription - only listen for UPDATE events on polls for vote counts
+    // This follows the rule: "Do NOT stream every individual vote event. Instead, send aggregated vote counts."
     const pollsSubscription = supabase
       .channel('polls_channel')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'polls' }, (payload: any) => {
-        if (payload.eventType === 'INSERT') {
-          setPolls(prev => [payload.new as Poll, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          // Show real-time notification for new votes
-          setPolls(prev => {
-            const existingPoll = prev.find(p => p.id === payload.new.id);
-            if (existingPoll && payload.new.total_votes > (existingPoll.total_votes || 0)) {
-              // Only show if it's a significant update or throttle it
-              toast.success('Live Vote!', {
-                description: `Someone just voted on: ${payload.new.question}`,
-                duration: 2000,
-                icon: <TrendingUp size={14} className="text-green-500" />
-              });
-            }
-            return prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p);
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setPolls(prev => prev.filter(p => payload.old && p.id !== payload.old.id));
-        }
+      .on('postgres_changes' as any, { event: 'UPDATE', schema: 'public', table: 'polls' }, (payload: any) => {
+        // Show real-time notification for new votes
+        setPolls(prev => {
+          const existingPoll = prev.find(p => p.id === payload.new.id);
+          if (existingPoll && payload.new.total_votes > (existingPoll.total_votes || 0)) {
+            // Only show if it's a significant update or throttle it
+            toast.success('Live Vote!', {
+              description: `Someone just voted on: ${payload.new.question}`,
+              duration: 2000,
+              icon: <TrendingUp size={14} className="text-green-500" />
+            });
+          }
+          return prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p);
+        });
+      })
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'polls' }, (payload: any) => {
+        setPolls(prev => [payload.new as Poll, ...prev]);
       })
       .subscribe();
 
-    const groupsSubscription = supabase
-      .channel('groups_channel')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'poll_groups' }, (payload: any) => {
-        if (payload.eventType === 'INSERT') {
-          setPollGroups(prev => [payload.new as PollGroup, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setPollGroups(prev => prev.map(g => g.id === payload.new.id ? { ...g, ...payload.new } : g));
-        } else if (payload.eventType === 'DELETE') {
-          setPollGroups(prev => prev.filter(g => payload.old && g.id !== payload.old.id));
-        }
-      })
-      .subscribe();
-
+    // No real-time for poll groups as they change rarely
     return () => {
       supabase.removeChannel(pollsSubscription);
-      supabase.removeChannel(groupsSubscription);
     };
   }, []);
 
@@ -606,6 +561,11 @@ const VotePage = () => {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 relative">
+      <MetaTags 
+        title={sharedPoll ? sharedPoll.question : 'Campus Voting'}
+        description={sharedPoll ? `Vote now on CEE MEDIA: ${sharedPoll.question}` : 'Shape the future of your campus. Vote on trending topics in real-time.'}
+        image={sharedPoll?.image || undefined}
+      />
       {/* Immersive Background Elements */}
       <div className="fixed top-0 left-0 w-full h-full -z-20 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-400/10 rounded-full blur-[120px] animate-pulse" />

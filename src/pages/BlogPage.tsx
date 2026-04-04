@@ -6,6 +6,8 @@ import { Heart, MessageCircle, Share2, User, Calendar, Send, Link, Check, Search
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
+import MetaTags from '../components/MetaTags';
 
 const BlogCard = React.memo(({ post }: { post: Post }) => {
   const [liked, setLiked] = useState(false);
@@ -41,19 +43,12 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
     if (showComments) {
       fetchComments();
       
-      const channel = supabase
-        .channel(`post_comments_${post.id}`)
-        .on('postgres_changes' as any, { 
-          event: '*', 
-          table: 'post_comments',
-          filter: `post_id=eq.${post.id}`
-        }, () => {
-          fetchComments();
-        })
-        .subscribe();
+      // DO NOT use realtime for comments as per optimization rules
+      // Instead, use periodic fetching every 20 seconds
+      const interval = setInterval(fetchComments, 20000);
 
       return () => {
-        supabase.removeChannel(channel);
+        clearInterval(interval);
       };
     }
   }, [showComments, post.id]);
@@ -164,7 +159,7 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
     >
       <div className="h-40 overflow-hidden relative">
         <img 
-          src={post.image || `https://picsum.photos/seed/${post.id}/800/600`} 
+          src={post.image || `https://picsum.photos/seed/${post.id}/400/300?blur=1`} 
           alt={post.title}
           className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
           referrerPolicy="no-referrer"
@@ -378,7 +373,15 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
 const BlogPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const postId = searchParams.get('id');
+
+  const categories = ['All', 'Gist', 'News', 'Events', 'Drama', 'Trends'];
+
+  // Find the specific post if ID is provided in URL
+  const sharedPost = postId ? posts.find(p => p.id === postId) : null;
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -391,6 +394,14 @@ const BlogPage = () => {
       
       if (data) {
         let formattedPosts = data as Post[];
+
+        // Filter by category
+        if (selectedCategory !== 'All') {
+          formattedPosts = formattedPosts.filter(post => 
+            post.category === selectedCategory || 
+            (selectedCategory === 'Gist' && !post.category) // Default to Gist if no category
+          );
+        }
 
         // Filter by search query
         if (searchQuery.trim()) {
@@ -414,45 +425,55 @@ const BlogPage = () => {
   useEffect(() => {
     fetchPosts();
 
-    // Real-time subscription
-    const subscription = supabase
-      .channel('posts_channel')
-      .on('postgres_changes' as any, { event: '*', table: 'posts' }, (payload: any) => {
-        if (payload.eventType === 'INSERT') {
-          setPosts(prev => [payload.new as Post, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setPosts(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
-        } else if (payload.eventType === 'DELETE') {
-          setPosts(prev => prev.filter(p => payload.old && p.id !== payload.old.id));
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [searchQuery]);
+    // DO NOT use realtime for blog posts as per optimization rules
+    // "Only reload when user refreshes or navigates"
+    return () => {};
+  }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
-        <div className="space-y-0.5">
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Campus Blog</h1>
-          <p className="text-slate-500 text-xs md:text-sm">Stay updated with stories that matter.</p>
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <MetaTags 
+        title={sharedPost ? sharedPost.title : 'Campus Blog'}
+        description={sharedPost ? sharedPost.content.substring(0, 160) + '...' : 'Stay updated with stories that matter on campus.'}
+        image={sharedPost?.image || undefined}
+        type={sharedPost ? 'article' : 'website'}
+      />
+      
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Campus Blog</h1>
+          <p className="text-slate-500 text-sm">Stay updated with stories that matter.</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto">
-          <div className="relative flex-grow sm:flex-grow-0 sm:w-56">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               type="text"
               placeholder="Search posts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm"
+              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-medium shadow-sm"
             />
           </div>
         </div>
+      </div>
+
+      {/* Categories */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
+        {categories.map((category) => (
+          <button
+            key={category}
+            onClick={() => setSelectedCategory(category)}
+            className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+              selectedCategory === category 
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 scale-105' 
+                : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
+            }`}
+          >
+            {category}
+          </button>
+        ))}
       </div>
 
       {loading ? (

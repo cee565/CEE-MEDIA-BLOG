@@ -8,7 +8,7 @@ interface LogoProps {
   dark?: boolean;
 }
 
-export const Logo: React.FC<LogoProps> = ({ 
+export const Logo: React.FC<LogoProps> = React.memo(({ 
   className = "", 
   iconClassName = "w-12 h-12", 
   textClassName = "", 
@@ -16,7 +16,7 @@ export const Logo: React.FC<LogoProps> = ({
   dark = true 
 }) => (
   <div className={`flex items-center space-x-3 ${className}`}>
-    <div className={`relative ${iconClassName} flex items-center justify-center overflow-hidden rounded-xl`}>
+    <div className={`relative ${iconClassName} flex items-center justify-center overflow-hidden rounded-xl bg-white/5`}>
       <img 
         src="https://media.base44.com/images/public/user_69c58cd8140b12f4f7e0ba23/fed4f0662_Screenshot_20260326-200402.jpg" 
         alt="CEE MEDIA" 
@@ -24,8 +24,8 @@ export const Logo: React.FC<LogoProps> = ({
         style={{ 
           mixBlendMode: dark ? 'screen' : 'multiply',
           filter: dark 
-            ? 'invert(1) brightness(2) contrast(1.2)' // Pure white logo
-            : 'grayscale(1) brightness(0)' // Pure black logo
+            ? 'invert(1) brightness(2) contrast(1.2)' 
+            : 'grayscale(1) brightness(0)'
         }}
         referrerPolicy="no-referrer"
       />
@@ -37,6 +37,6 @@ export const Logo: React.FC<LogoProps> = ({
       </div>
     )}
   </div>
-);
+));
 
 export default Logo;

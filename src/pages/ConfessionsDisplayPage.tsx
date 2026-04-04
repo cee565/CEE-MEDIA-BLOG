@@ -6,7 +6,9 @@ import { MessageSquare, Heart, Clock, ShieldCheck, ChevronDown, ChevronUp, Send,
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { useSearchParams } from 'react-router-dom';
 import Logo from '../components/Logo';
+import MetaTags from '../components/MetaTags';
 
 const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -48,19 +50,12 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
     if (showComments) {
       fetchComments();
       
-      const channel = supabase
-        .channel(`comments_${message.id}`)
-        .on('postgres_changes' as any, { 
-          event: '*', 
-          table: 'message_comments',
-          filter: `message_id=eq.${message.id}`
-        }, () => {
-          fetchComments();
-        })
-        .subscribe();
+      // DO NOT use realtime for comments as per optimization rules
+      // Instead, use periodic fetching every 20 seconds
+      const interval = setInterval(fetchComments, 20000);
 
       return () => {
-        supabase.removeChannel(channel);
+        clearInterval(interval);
       };
     }
   }, [showComments, message.id]);
@@ -418,33 +413,30 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
 const ConfessionsDisplayPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
+  const [searchParams] = useSearchParams();
+  const confessionId = searchParams.get('id');
+
+  // Find the specific confession if ID is provided in URL
+  const sharedConfession = confessionId ? messages.find(m => m.id === confessionId) : null;
 
   useEffect(() => {
-    fetchApprovedMessages();
+    fetchApprovedMessages(0);
 
+    // Use limited realtime: Only subscribe to NEW confessions (INSERT events)
+    // This follows the rule: "Only subscribe to NEW confessions (INSERT events)"
     const channel = supabase
       .channel('approved_messages_channel')
-      .on('postgres_changes' as any, { event: '*', table: 'messages' }, (payload: any) => {
-        if (payload.eventType === 'INSERT' && payload.new.approved) {
-          setMessages(prev => [payload.new as Message, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          if (payload.new.approved) {
-            setMessages(prev => {
-              const exists = prev.find(m => m.id === payload.new.id);
-              if (exists) {
-                return prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m);
-              } else {
-                return [payload.new as Message, ...prev].sort((a, b) => 
-                  new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                );
-              }
-            });
-          } else {
-            setMessages(prev => prev.filter(m => m.id === payload.new.id ? false : true));
-          }
-        } else if (payload.eventType === 'DELETE') {
-          setMessages(prev => prev.filter(m => payload.old && m.id !== payload.old.id));
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
+        if (payload.new.approved) {
+          setMessages(prev => [payload.new as Message, ...prev].slice(0, 50)); // Limit feed to latest 50 items
         }
+      })
+      .on('postgres_changes' as any, { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload: any) => {
+        // Only update if it's already in the list (e.g. likes update)
+        setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
       })
       .subscribe();
 
@@ -453,16 +445,28 @@ const ConfessionsDisplayPage = () => {
     };
   }, []);
 
-  const fetchApprovedMessages = async () => {
+  const fetchApprovedMessages = async (pageNumber: number) => {
     try {
+      const from = pageNumber * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('approved', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (error) throw error;
-      setMessages(data as Message[]);
+      
+      if (data) {
+        if (pageNumber === 0) {
+          setMessages(data as Message[]);
+        } else {
+          setMessages(prev => [...prev, ...(data as Message[])]);
+        }
+        setHasMore(data.length === PAGE_SIZE);
+      }
     } catch (e) {
       console.error('Error fetching messages:', e);
     } finally {
@@ -470,8 +474,19 @@ const ConfessionsDisplayPage = () => {
     }
   };
 
+  const loadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchApprovedMessages(nextPage);
+  };
+
   return (
     <div className="min-h-screen pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-slate-50 relative overflow-hidden">
+      <MetaTags 
+        title={sharedConfession ? 'Anonymous Confession' : 'Campus Confessions'}
+        description={sharedConfession ? sharedConfession.content.substring(0, 160) + '...' : 'Read anonymous confessions from your campus on CEE MEDIA.'}
+        type="article"
+      />
       {/* Branded Background Pattern */}
       <div className="absolute inset-0 pointer-events-none opacity-[0.03] select-none overflow-hidden">
         <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-x-32 gap-y-24 rotate-[-15deg] scale-125">
@@ -488,6 +503,10 @@ const ConfessionsDisplayPage = () => {
       </div>
 
       <div className="max-w-4xl mx-auto space-y-6 relative z-10">
+        <MetaTags 
+          title={sharedConfession ? `Confession: ${sharedConfession.content.substring(0, 30)}...` : 'Campus Confessions'}
+          description={sharedConfession ? sharedConfession.content.substring(0, 160) : 'Read and share anonymous campus confessions.'}
+        />
         {/* Header */}
         <div className="text-center space-y-1.5">
           <motion.div
@@ -517,16 +536,37 @@ const ConfessionsDisplayPage = () => {
         </div>
 
         {/* Messages Grid */}
-        {loading ? (
+        {loading && page === 0 ? (
           <div className="flex justify-center py-16">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-purple-600 border-t-transparent"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {messages.map((message) => (
-              <ConfessionCard key={message.id} message={message} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {messages.map((message) => (
+                <ConfessionCard key={message.id} message={message} />
+              ))}
+            </div>
+            
+            {hasMore && (
+              <div className="flex justify-center pt-8">
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="px-8 py-3 bg-white text-slate-900 rounded-full font-black text-xs border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-2 group"
+                >
+                  {loading ? (
+                    <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>LOAD MORE CONFESSIONS</span>
+                      <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {!loading && messages.length === 0 && (

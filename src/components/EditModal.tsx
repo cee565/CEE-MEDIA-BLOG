@@ -39,6 +39,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
       sanitizedData.author = sanitizedData.author || '';
       sanitizedData.content = sanitizedData.content || '';
       sanitizedData.author_id = sanitizedData.author_id || '';
+      sanitizedData.category = sanitizedData.category || 'Gist';
     } else if (type === 'ad') {
       sanitizedData.name = sanitizedData.name || '';
       sanitizedData.link_url = sanitizedData.link_url || '';
@@ -303,7 +304,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                     required
                   />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 ml-2">Author (Display)</label>
                     <input
@@ -330,6 +331,18 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                       <option value="">Select Team Member (Optional)</option>
                       {team.map((member: any) => (
                         <option key={member.id} value={member.id}>{member.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-500 ml-2">Category</label>
+                    <select
+                      value={formData.category || 'Gist'}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-bold text-slate-600"
+                    >
+                      {['Gist', 'News', 'Events', 'Drama', 'Trends'].map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
                   </div>

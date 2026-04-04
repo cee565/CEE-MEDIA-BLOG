@@ -7,6 +7,7 @@ import { supabase } from './supabase';
 import { format } from 'date-fns';
 import { Toaster, toast } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
+import { HelmetProvider } from 'react-helmet-async';
 import Logo from './components/Logo';
 import ScrollToTop from './components/ScrollToTop';
 
@@ -46,7 +47,7 @@ const Navbar = () => {
               <Link
                 key={link.name}
                 to={link.path}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-black transition-all duration-300 ${
+                className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-black transition-all duration-300 relative ${
                   location.pathname === link.path 
                     ? 'bg-white text-slate-900 shadow-sm scale-105' 
                     : 'text-slate-400 hover:text-white hover:bg-white/10'
@@ -110,31 +111,28 @@ const App = () => {
     const globalChannel = supabase
       .channel('global_notifications')
       .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'polls' }, (payload: any) => {
-        toast.info(`New Poll: ${payload.new.question}`, {
-          description: "Go cast your vote now!",
-          action: {
-            label: "Vote",
-            onClick: () => window.location.href = '/vote'
-          }
-        });
-      })
-      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'posts' }, (payload: any) => {
-        toast.info(`New Blog Post: ${payload.new.title}`, {
-          description: "Read the latest campus gist!",
-          action: {
-            label: "Read",
-            onClick: () => window.location.href = '/blog'
-          }
-        });
+        if (window.location.pathname !== '/vote') {
+          toast.info(`New Poll: ${payload.new.question}`, {
+            description: "Cast your vote now!",
+            action: {
+              label: "Vote",
+              onClick: () => window.location.href = '/vote'
+            },
+            icon: <TrendingUp size={14} className="text-purple-600" />
+          });
+        }
       })
       .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages', filter: 'approved=eq.true' }, (payload: any) => {
-        toast.info("New Confession Added!", {
-          description: "Someone just shared a secret...",
-          action: {
-            label: "View",
-            onClick: () => window.location.href = '/confessions'
-          }
-        });
+        if (window.location.pathname !== '/confessions') {
+          toast.info("New Confession Added!", {
+            description: "Someone just shared a secret...",
+            action: {
+              label: "View",
+              onClick: () => window.location.href = '/confessions'
+            },
+            icon: <MessageSquare size={14} className="text-orange-600" />
+          });
+        }
       })
       .subscribe();
 
@@ -213,79 +211,81 @@ const App = () => {
   }
 
   return (
-    <ErrorBoundary>
-      <Router>
-        <ScrollToTop />
-        <div className="min-h-screen flex flex-col pt-16">
-          <Navbar />
-          <main className="flex-grow">
-            <React.Suspense fallback={
-              <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                <div className="relative">
-                  <div className="w-16 h-16 border-4 border-purple-100 rounded-full"></div>
-                  <div className="absolute top-0 left-0 w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <div className="flex flex-col items-center space-y-1">
-                  <Logo iconClassName="w-6 h-6" showText={false} />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Loading Experience...</span>
-                </div>
-              </div>
-            }>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/vote" element={<VotePage />} />
-                <Route path="/blog" element={<BlogPage />} />
-                <Route path="/confessions" element={<ConfessionsDisplayPage />} />
-                <Route path="/confessions/submit" element={<ConfessionsPage />} />
-                <Route path="/team" element={<TeamPage />} />
-                <Route path="/admin/*" element={<AdminPage />} />
-              </Routes>
-            </React.Suspense>
-          </main>
-          
-          <footer className="bg-slate-900 border-t border-white/5 py-12 mt-12 text-white">
-            <div className="max-w-7xl mx-auto px-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-center text-center md:text-left">
-                <div className="space-y-4">
-                  <Link to="/" className="flex items-center justify-center md:justify-start group">
-                    <Logo iconClassName="w-12 h-12" textClassName="text-left" dark={true} />
-                  </Link>
-                  <p className="text-slate-400 text-sm max-w-xs mx-auto md:mx-0">Your #1 source for campus news, trends, and anonymous confessions.</p>
-                </div>
-
-                <div className="flex flex-col items-center space-y-4">
-                  <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Connect With Us</h4>
-                  <div className="flex space-x-6">
-                    <a href="https://whatsapp.com/channel/0029Vb7LSXU11ulKZ4e1E738" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#25D366] transition-all hover:scale-110">
-                      <WhatsAppIcon size={22} />
-                    </a>
-                    <a href="https://tiktok.com/@ceemedia4" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
-                      <TikTokIcon size={22} />
-                    </a>
-                    <a href="https://x.com/cee_studio12?s=09" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
-                      <XIcon size={20} />
-                    </a>
+    <HelmetProvider>
+      <ErrorBoundary>
+        <Router>
+          <ScrollToTop />
+          <div className="min-h-screen flex flex-col pt-16">
+            <Navbar />
+            <main className="flex-grow">
+              <React.Suspense fallback={
+                <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-purple-100 rounded-full"></div>
+                    <div className="absolute top-0 left-0 w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <div className="flex flex-col items-center space-y-1">
+                    <Logo iconClassName="w-6 h-6" showText={false} />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Loading Experience...</span>
                   </div>
                 </div>
+              }>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/vote" element={<VotePage />} />
+                  <Route path="/blog" element={<BlogPage />} />
+                  <Route path="/confessions" element={<ConfessionsDisplayPage />} />
+                  <Route path="/confessions/submit" element={<ConfessionsPage />} />
+                  <Route path="/team" element={<TeamPage />} />
+                  <Route path="/admin/*" element={<AdminPage />} />
+                </Routes>
+              </React.Suspense>
+            </main>
+            
+            <footer className="bg-slate-900 border-t border-white/5 py-12 mt-12 text-white">
+              <div className="max-w-7xl mx-auto px-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-center text-center md:text-left">
+                  <div className="space-y-4">
+                    <Link to="/" className="flex items-center justify-center md:justify-start group">
+                      <Logo iconClassName="w-12 h-12" textClassName="text-left" dark={true} />
+                    </Link>
+                    <p className="text-slate-400 text-sm max-w-xs mx-auto md:mx-0">Your #1 source for campus news, trends, and anonymous confessions.</p>
+                  </div>
 
-                <div className="space-y-4 text-center md:text-right">
-                  <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
-                  <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
-                  <Link to="/admin" className="inline-flex items-center text-slate-500 hover:text-white transition-colors">
-                    <Shield size={14} className="mr-2" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Admin Access</span>
-                  </Link>
+                  <div className="flex flex-col items-center space-y-4">
+                    <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Connect With Us</h4>
+                    <div className="flex space-x-6">
+                      <a href="https://whatsapp.com/channel/0029Vb7LSXU11ulKZ4e1E738" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#25D366] transition-all hover:scale-110">
+                        <WhatsAppIcon size={22} />
+                      </a>
+                      <a href="https://tiktok.com/@ceemedia4" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
+                        <TikTokIcon size={22} />
+                      </a>
+                      <a href="https://x.com/cee_studio12?s=09" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-all hover:scale-110">
+                        <XIcon size={20} />
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 text-center md:text-right">
+                    <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
+                    <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
+                    <Link to="/admin" className="inline-flex items-center text-slate-500 hover:text-white transition-colors">
+                      <Shield size={14} className="mr-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Admin Access</span>
+                    </Link>
+                  </div>
+                </div>
+                <div className="mt-12 pt-8 border-t border-white/5 text-center">
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA. All rights reserved.</p>
                 </div>
               </div>
-              <div className="mt-12 pt-8 border-t border-white/5 text-center">
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA. All rights reserved.</p>
-              </div>
-            </div>
-          </footer>
-        </div>
-        <Toaster position="top-center" richColors />
-      </Router>
-    </ErrorBoundary>
+            </footer>
+          </div>
+          <Toaster position="top-center" richColors />
+        </Router>
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 };
 

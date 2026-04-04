@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TrendingUp, BookOpen, MessageCircle, Zap, ChevronRight, Send, Users, Activity, Heart, Share2, Link as LinkIcon, Check } from 'lucide-react';
+import { TrendingUp, BookOpen, MessageCircle, Zap, ChevronRight, Send, Users, Activity, Heart, Share2, Link as LinkIcon, Check, User } from 'lucide-react';
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { supabase } from '../supabase';
 import { Poll, Post, Message } from '../types';
 import Logo from '../components/Logo';
 import AdsBoard from '../components/AdsBoard';
+import MetaTags from '../components/MetaTags';
 
 const HomePage = () => {
   const [trendingPoll, setTrendingPoll] = useState<Poll | null>(null);
@@ -98,14 +99,8 @@ const HomePage = () => {
     };
     fetchData();
 
-    // Real-time subscriptions
-    const channels = ['polls', 'posts', 'messages', 'analytics'].map(table => 
-      supabase.channel(`${table}_home_channel`).on('postgres_changes' as any, { event: '*', schema: 'public', table }, () => fetchData()).subscribe()
-    );
-
-    return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
-    };
+    // No real-time on home page to save resources as per optimization rules
+    return () => {};
   }, []);
 
   const categories = [
@@ -118,6 +113,7 @@ const HomePage = () => {
 
   return (
     <div className="space-y-0">
+      <MetaTags />
       <AdsBoard />
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -331,6 +327,7 @@ const HomePage = () => {
                 alt="Post" 
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                 referrerPolicy="no-referrer"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
             </div>
@@ -448,22 +445,27 @@ const HomePage = () => {
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { name: 'Debate', icon: Zap, desc: 'Hot topics', color: 'text-purple-400' },
-              { name: 'Polls', icon: TrendingUp, desc: 'Cast your vote', color: 'text-blue-400' },
-              { name: 'Drama', icon: MessageCircle, desc: 'Latest gist', color: 'text-orange-400' },
-              { name: 'Trends', icon: Zap, desc: 'What\'s new', color: 'text-pink-400' },
+              { name: 'Debate', icon: Zap, desc: 'Hot topics', color: 'text-purple-400', path: '/vote' },
+              { name: 'Polls', icon: TrendingUp, desc: 'Cast your vote', color: 'text-blue-400', path: '/vote' },
+              { name: 'Confessions', icon: MessageCircle, desc: 'Share secrets', color: 'text-orange-400', path: '/confessions' },
+              { name: 'Trends', icon: Zap, desc: 'What\'s new', color: 'text-pink-400', path: '/blog' },
             ].map((feature, idx) => (
-              <motion.div 
+              <Link 
                 key={feature.name}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 + (idx * 0.1) }}
-                className="bg-white/5 border border-white/10 p-6 rounded-[1.5rem] hover:bg-white/10 transition-all group hover:scale-105"
+                to={feature.path}
+                className="block"
               >
-                <feature.icon className={`${feature.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
-                <h4 className="font-black text-base uppercase tracking-wider mb-1">{feature.name}</h4>
-                <p className="text-[10px] text-slate-400 font-medium">{feature.desc}</p>
-              </motion.div>
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 + (idx * 0.1) }}
+                  className="bg-white/5 border border-white/10 p-6 rounded-[1.5rem] hover:bg-white/10 transition-all group hover:scale-105 h-full"
+                >
+                  <feature.icon className={`${feature.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
+                  <h4 className="font-black text-base uppercase tracking-wider mb-1">{feature.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-medium">{feature.desc}</p>
+                </motion.div>
+              </Link>
             ))}
           </div>
         </div>

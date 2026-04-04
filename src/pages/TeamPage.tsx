@@ -13,6 +13,9 @@ const TeamMemberCard: React.FC<{ member: TeamMember }> = ({ member }) => {
     const hasLiked = localStorage.getItem(storageKey);
     if (hasLiked) setLiked(true);
     setLocalLikes(member.likes || 0);
+
+    // No real-time for team member likes to save resources
+    return () => {};
   }, [member.id, member.likes]);
 
   const handleLike = async () => {
@@ -54,7 +57,7 @@ const TeamMemberCard: React.FC<{ member: TeamMember }> = ({ member }) => {
     >
       <div className="aspect-[4/5] relative overflow-hidden">
         <img 
-          src={member.image || `https://picsum.photos/seed/${member.id}/800/1000`} 
+          src={member.image || `https://picsum.photos/seed/${member.id}/400/500`} 
           alt={member.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           referrerPolicy="no-referrer"
@@ -118,16 +121,8 @@ const TeamPage = () => {
   useEffect(() => {
     fetchTeam();
 
-    const channel = supabase
-      .channel('team_page_channel')
-      .on('postgres_changes' as any, { event: '*', table: 'team' }, () => {
-        fetchTeam();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // No real-time for team page to save resources
+    return () => {};
   }, []);
 
   const fetchTeam = async () => {

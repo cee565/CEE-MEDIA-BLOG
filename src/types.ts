@@ -40,9 +40,11 @@ export interface Post {
   id: string;
   title: string;
   author: string;
+  author_id?: string;
   content: string;
   image: string;
   likes: number;
+  category?: string;
   created_at: string;
 }
 
