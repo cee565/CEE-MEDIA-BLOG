@@ -1373,7 +1373,33 @@ ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Read" ON polls;
 DROP POLICY IF EXISTS "Allow All" ON polls;
 CREATE POLICY "Public Read" ON polls FOR SELECT USING (true);
-CREATE POLICY "Allow All" ON polls FOR ALL USING (true) WITH CHECK (true);`}
+CREATE POLICY "Allow All" ON polls FOR ALL USING (true) WITH CHECK (true);
+
+-- RPC for atomic voting (handles millions of votes accurately)
+CREATE OR REPLACE FUNCTION increment_vote(p_id UUID, opt_idx TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE polls
+  SET 
+    total_votes = COALESCE(total_votes, 0) + 1,
+    votes = jsonb_set(
+      COALESCE(votes, '{}'::jsonb),
+      ARRAY[opt_idx],
+      (COALESCE((votes->>opt_idx)::int, 0) + 1)::text::jsonb
+    )
+  WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC for atomic liking
+CREATE OR REPLACE FUNCTION increment_poll_like(p_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE polls
+  SET likes = COALESCE(likes, 0) + 1
+  WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;`}
                     </code>
                     <button 
                       onClick={() => {
@@ -1407,7 +1433,33 @@ ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public Read" ON polls;
 DROP POLICY IF EXISTS "Allow All" ON polls;
 CREATE POLICY "Public Read" ON polls FOR SELECT USING (true);
-CREATE POLICY "Allow All" ON polls FOR ALL USING (true) WITH CHECK (true);`);
+CREATE POLICY "Allow All" ON polls FOR ALL USING (true) WITH CHECK (true);
+
+-- RPC for atomic voting (handles millions of votes accurately)
+CREATE OR REPLACE FUNCTION increment_vote(p_id UUID, opt_idx TEXT)
+RETURNS void AS $$
+BEGIN
+  UPDATE polls
+  SET 
+    total_votes = COALESCE(total_votes, 0) + 1,
+    votes = jsonb_set(
+      COALESCE(votes, '{}'::jsonb),
+      ARRAY[opt_idx],
+      (COALESCE((votes->>opt_idx)::int, 0) + 1)::text::jsonb
+    )
+  WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC for atomic liking
+CREATE OR REPLACE FUNCTION increment_poll_like(p_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE polls
+  SET likes = COALESCE(likes, 0) + 1
+  WHERE id = p_id;
+END;
+$$ LANGUAGE plpgsql;`);
                         showNotification("SQL copied to clipboard", "success");
                       }}
                       className="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-colors"

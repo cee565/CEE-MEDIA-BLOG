@@ -118,25 +118,11 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
 
     setIsSubmitting(true);
     try {
-      // Fetch latest data to minimize race conditions for high-volume voting
-      const { data: currentPoll, error: fetchError } = await supabase
-        .from('polls')
-        .select('votes, total_votes')
-        .eq('id', poll.id)
-        .single();
-      
-      if (fetchError) throw fetchError;
-
-      const updatedVotes = { ...(currentPoll?.votes || {}) };
-      updatedVotes[tempSelected] = (updatedVotes[tempSelected] || 0) + 1;
-
-      const { error } = await supabase
-        .from('polls')
-        .update({
-          votes: updatedVotes,
-          total_votes: (currentPoll?.total_votes || 0) + 1
-        })
-        .eq('id', poll.id);
+      // Use atomic RPC to handle high-concurrency and millions of votes accurately
+      const { error } = await supabase.rpc('increment_vote', {
+        p_id: poll.id,
+        opt_idx: tempSelected.toString()
+      });
 
       if (error) throw error;
 
@@ -172,19 +158,10 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
     localStorage.setItem(likeStorageKey, 'true');
 
     try {
-      const { data: currentPoll, error: fetchError } = await supabase
-        .from('polls')
-        .select('likes')
-        .eq('id', poll.id)
-        .maybeSingle();
-      
-      if (fetchError) throw fetchError;
-
-      const newLikes = (currentPoll?.likes || 0) + 1;
-      const { error } = await supabase
-        .from('polls')
-        .update({ likes: newLikes })
-        .eq('id', poll.id);
+      // Use atomic RPC for likes to handle high traffic
+      const { error } = await supabase.rpc('increment_poll_like', {
+        p_id: poll.id
+      });
       
       if (error) throw error;
       toast.success('Poll liked!');
