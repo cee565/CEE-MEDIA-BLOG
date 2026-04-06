@@ -277,10 +277,6 @@ const App = () => {
                   <div className="space-y-4 text-center md:text-right">
                     <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
                     <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
-                    <Link to="/admin" className="inline-flex items-center text-slate-500 hover:text-white transition-colors">
-                      <Shield size={14} className="mr-2" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Admin Access</span>
-                    </Link>
                   </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-white/5 text-center">

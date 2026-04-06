@@ -2674,8 +2674,13 @@ const AdminPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
-    // Use trim() to avoid common copy-paste space issues, but only if the user didn't intentionally put spaces
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD;
+    
+    if (!adminPass) {
+      setError('Admin password not configured. Please set VITE_ADMIN_PASSWORD in environment variables.');
+      return;
+    }
+
     if (password === adminPass || password.trim() === adminPass) {
       setIsAuthenticated(true);
       setError('');
@@ -2735,9 +2740,6 @@ const AdminPage = () => {
             >
               Unlock Dashboard
             </button>
-            <p className="text-[9px] text-slate-400 text-center mt-4">
-              Default password is <code className="bg-slate-100 px-1 rounded text-slate-600">admin123</code> if not set in Vercel.
-            </p>
           </form>
         </motion.div>
       </div>
