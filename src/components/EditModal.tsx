@@ -40,6 +40,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
       sanitizedData.content = sanitizedData.content || '';
       sanitizedData.author_id = sanitizedData.author_id || '';
       sanitizedData.category = sanitizedData.category || 'Gist';
+      sanitizedData.url = sanitizedData.url || '';
     } else if (type === 'ad') {
       sanitizedData.name = sanitizedData.name || '';
       sanitizedData.link_url = sanitizedData.link_url || '';
@@ -49,6 +50,12 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
       sanitizedData.name = sanitizedData.name || '';
       sanitizedData.role = sanitizedData.role || '';
       sanitizedData.bio = sanitizedData.bio || '';
+      sanitizedData.url = sanitizedData.url || '';
+    } else if (type === 'message') {
+      sanitizedData.content = sanitizedData.content || '';
+      sanitizedData.approved = sanitizedData.approved ?? false;
+      sanitizedData.likes = sanitizedData.likes ?? 0;
+      sanitizedData.url = sanitizedData.url || '';
     }
     setFormData(sanitizedData);
   }, [initialData, type]);
@@ -112,7 +119,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Poll Question</label>
                   <input
                     type="text"
-                    value={formData.question}
+                    value={formData.question || ''}
                     onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400"
                     required
@@ -121,7 +128,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Poll Description</label>
                   <textarea
-                    value={formData.description}
+                    value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 min-h-[100px] resize-none"
                   />
@@ -136,7 +143,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                         <div className="flex items-center space-x-2">
                           <input
                             type="text"
-                            value={optionText}
+                            value={optionText || ''}
                             onChange={(e) => {
                               const opts = [...formData.options];
                               if (typeof opts[i] === 'string') {
@@ -232,7 +239,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                     <input
                       type="checkbox"
                       id="is_ended"
-                      checked={formData.is_ended}
+                      checked={formData.is_ended || false}
                       onChange={(e) => setFormData({ ...formData, is_ended: e.target.checked })}
                       className="w-5 h-5 rounded border-slate-300 text-purple-500 focus:ring-purple-500"
                     />
@@ -257,7 +264,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Group Title</label>
                   <input
                     type="text"
-                    value={formData.title}
+                    value={formData.title || ''}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400"
                     required
@@ -266,7 +273,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Description</label>
                   <textarea
-                    value={formData.description}
+                    value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 min-h-[100px] resize-none"
                   />
@@ -298,7 +305,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Post Title</label>
                   <input
                     type="text"
-                    value={formData.title}
+                    value={formData.title || ''}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400"
                     required
@@ -309,7 +316,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                     <label className="text-sm font-bold text-slate-500 ml-2">Author (Display)</label>
                     <input
                       type="text"
-                      value={formData.author}
+                      value={formData.author || ''}
                       onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                       className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400"
                     />
@@ -369,10 +376,19 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Content</label>
                   <textarea
-                    value={formData.content}
+                    value={formData.content || ''}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     className="w-full h-48 p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 resize-none"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">External URL (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.url || ''}
+                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400"
                   />
                 </div>
                 <div className="space-y-2">
@@ -393,7 +409,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Message Content</label>
                   <textarea
-                    value={formData.content}
+                    value={formData.content || ''}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     className="w-full h-48 p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-orange-400 resize-none"
                     required
@@ -403,7 +419,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <input
                     type="checkbox"
                     id="approved"
-                    checked={formData.approved}
+                    checked={formData.approved || false}
                     onChange={(e) => setFormData({ ...formData, approved: e.target.checked })}
                     className="w-5 h-5 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
                   />
@@ -419,6 +435,15 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                     min="0"
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">External URL (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.url || ''}
+                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-orange-400"
+                  />
+                </div>
               </div>
             )}
 
@@ -428,7 +453,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Full Name</label>
                   <input
                     type="text"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400"
                     required
@@ -438,7 +463,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Role</label>
                   <input
                     type="text"
-                    value={formData.role}
+                    value={formData.role || ''}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400"
                     required
@@ -447,9 +472,18 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Bio</label>
                   <textarea
-                    value={formData.bio}
+                    value={formData.bio || ''}
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400 resize-none h-24"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">External URL (Optional)</label>
+                  <input
+                    type="text"
+                    value={formData.url || ''}
+                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400"
                   />
                 </div>
                 <div className="space-y-2">
@@ -490,7 +524,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Ad Name</label>
                   <input
                     type="text"
-                    value={formData.name}
+                    value={formData.name || ''}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400"
                     required
@@ -500,7 +534,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 ml-2">Media Type</label>
                     <select
-                      value={formData.media_type}
+                      value={formData.media_type || 'image'}
                       onChange={(e) => setFormData({ ...formData, media_type: e.target.value as 'image' | 'video' })}
                       className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 font-bold text-slate-600"
                     >
@@ -532,7 +566,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Media URL (Fallback)</label>
                   <input
                     type="text"
-                    value={formData.media_url}
+                    value={formData.media_url || ''}
                     onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400"
                   />
@@ -541,7 +575,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <label className="text-sm font-bold text-slate-500 ml-2">Destination Link</label>
                   <input
                     type="text"
-                    value={formData.link_url}
+                    value={formData.link_url || ''}
                     onChange={(e) => setFormData({ ...formData, link_url: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400"
                     required
@@ -550,7 +584,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Description</label>
                   <textarea
-                    value={formData.description}
+                    value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full h-24 p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 resize-none"
                   />
@@ -559,7 +593,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <input
                     type="checkbox"
                     id="ad-active"
-                    checked={formData.is_active}
+                    checked={formData.is_active || false}
                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                     className="w-5 h-5 rounded border-slate-300 text-yellow-500 focus:ring-yellow-500"
                   />

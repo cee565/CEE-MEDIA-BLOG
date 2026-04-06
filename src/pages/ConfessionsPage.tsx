@@ -37,9 +37,8 @@ const ConfessionsPage = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, content, approved, likes, created_at')
         .in('id', storedIds)
-        .eq('approved', false) // Only show pending messages here
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -98,53 +97,57 @@ const ConfessionsPage = () => {
   const isSupabaseConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-3xl mx-auto px-4 py-12 space-y-12">
       {!isSupabaseConfigured && (
-        <div className="bg-red-50 border border-red-200 p-2.5 rounded-xl text-red-700 text-[10px] font-medium flex items-center space-x-2">
-          <ShieldAlert size={14} />
-          <span>Supabase is not configured. Please check your environment variables (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY).</span>
+        <div className="bg-red-50 border border-red-200 p-4 rounded-2xl text-red-700 text-xs font-medium flex items-center space-x-3">
+          <ShieldAlert size={18} />
+          <span>Supabase is not configured. Please check your environment variables.</span>
         </div>
       )}
-      <div className="text-center space-y-1.5">
+      <div className="text-center space-y-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center space-x-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-full text-[10px] font-bold"
+          className="inline-flex items-center space-x-2 bg-brand-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase"
         >
           <Logo iconClassName="w-4 h-4" showText={false} />
-          <span className="tracking-widest uppercase text-[9px]">ANONYMOUS PORTAL</span>
+          <span>Anonymous Portal</span>
         </motion.div>
-        <h1 className="text-2xl md:text-4xl font-black text-slate-900 uppercase tracking-tighter leading-none">WRITE YOUR <span className="text-orange-500">MESSAGE</span></h1>
-        <p className="text-slate-500 text-sm max-w-xl mx-auto font-bold tracking-tight uppercase">Share your thoughts, secrets, or gist anonymously.</p>
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+          WRITE YOUR <span className="text-brand-accent">MESSAGE</span>
+        </h1>
+        <p className="text-slate-500 text-sm md:text-base max-w-xl mx-auto font-medium">
+          Share your thoughts, secrets, or gist anonymously. Your identity is completely safe.
+        </p>
       </div>
 
       {/* Message Form */}
-      <section className="bg-white rounded-[1.25rem] card-shadow p-4 md:p-5 border border-slate-50 space-y-3">
-        <div className="flex items-center space-x-1.5 text-orange-500">
-          <ShieldAlert size={18} />
-          <span className="font-bold text-xs">Completely Anonymous</span>
+      <section className="bg-white rounded-[2rem] border border-slate-100 p-6 md:p-8 space-y-6 shadow-sm">
+        <div className="flex items-center space-x-2 text-brand-accent">
+          <ShieldAlert size={20} />
+          <span className="font-black text-xs uppercase tracking-widest">Completely Anonymous</span>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-2.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="What's on your mind? (Your identity is safe)"
-            className="w-full h-24 p-3 rounded-xl bg-slate-50 border border-slate-100 focus:border-orange-400 focus:ring-2 focus:ring-orange-100 outline-none transition-all resize-none text-slate-700 text-xs"
+            placeholder="What's on your mind?..."
+            className="w-full h-32 p-5 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 outline-none transition-all resize-none text-slate-700 text-sm font-medium"
             maxLength={500}
           />
           <div className="flex justify-between items-center">
-            <span className="text-[9px] text-slate-400">{content.length}/500 characters</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{content.length}/500 characters</span>
             <button
               type="submit"
               disabled={!content.trim() || sending}
-              className="bg-orange-500 text-white px-5 py-1.5 rounded-full font-bold shadow-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all text-xs"
+              className="bg-brand-primary text-white px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-brand-secondary disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-all"
             >
               {sending ? (
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <>
-                  <Send size={14} />
+                  <Send size={16} />
                   <span>Send Anonymously</span>
                 </>
               )}
@@ -158,13 +161,13 @@ const ConfessionsPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center space-y-2 text-green-600 font-bold text-xs bg-green-50 p-4 rounded-2xl border border-green-100"
+              className="flex flex-col items-center justify-center space-y-2 text-green-600 font-black text-xs bg-green-50 p-6 rounded-2xl border border-green-100"
             >
-              <div className="flex items-center space-x-1.5">
-                <CheckCircle2 size={18} />
-                <span>Sent! Awaiting admin approval.</span>
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 size={20} />
+                <span className="uppercase tracking-widest">Sent Successfully!</span>
               </div>
-              <p className="text-[10px] text-green-500 font-medium">Your message will appear on the confessions board once approved.</p>
+              <p className="text-[10px] text-green-500 font-medium opacity-80 uppercase tracking-widest">Awaiting admin approval.</p>
             </motion.div>
           )}
           {error && (
@@ -172,10 +175,10 @@ const ConfessionsPage = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex items-center justify-center space-x-1.5 text-red-600 font-bold text-xs bg-red-50 p-2.5 rounded-xl"
+              className="flex items-center justify-center space-x-2 text-red-600 font-black text-xs bg-red-50 p-4 rounded-xl border border-red-100"
             >
-              <ShieldAlert size={16} />
-              <span>{error}</span>
+              <ShieldAlert size={18} />
+              <span className="uppercase tracking-widest">{error}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -183,22 +186,26 @@ const ConfessionsPage = () => {
 
       {/* History Section */}
       {myMessages.length > 0 && (
-        <section className="space-y-2.5">
-          <h2 className="text-base font-bold text-slate-800 flex items-center">
-            <History size={18} className="mr-2 text-orange-500" />
-            Your Recent Submissions
-          </h2>
-          <div className="space-y-2.5">
+        <section className="space-y-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-1 h-6 bg-brand-accent rounded-full" />
+            <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+              Your Recent Submissions
+            </h2>
+          </div>
+          <div className="space-y-4">
             {myMessages.map((msg) => (
-              <div key={msg.id} className="bg-white p-3 rounded-xl border border-slate-100 card-shadow space-y-1.5">
-                <p className="text-slate-600 italic text-xs">"{msg.content}"</p>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-1.5 text-[9px] text-slate-400">
-                    <Clock size={10} />
+              <div key={msg.id} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm space-y-4">
+                <p className="text-slate-600 italic text-sm font-medium leading-relaxed">"{msg.content}"</p>
+                <div className="flex justify-between items-center pt-4 border-t border-slate-50">
+                  <div className="flex items-center space-x-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <Clock size={12} />
                     <span>{formatDistanceToNow(new Date(msg.created_at))} ago</span>
                   </div>
-                  <span className="px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 text-[8px] font-bold uppercase tracking-wider">
-                    Pending Approval
+                  <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                    msg.approved ? 'bg-green-50 text-green-600' : 'bg-brand-accent/10 text-brand-accent'
+                  }`}>
+                    {msg.approved ? 'Approved' : 'Pending Approval'}
                   </span>
                 </div>
               </div>
@@ -208,24 +215,24 @@ const ConfessionsPage = () => {
       )}
 
       {/* Info Section */}
-      <section className="bg-purple-50 rounded-[1.25rem] p-5 border border-purple-100 space-y-2.5">
-        <h2 className="text-base font-bold text-purple-900 flex items-center">
-          <MessageCircle size={18} className="mr-2 text-purple-600" />
-          How it works
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="space-y-1">
-            <div className="w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center text-purple-700 font-bold text-[10px]">1</div>
-            <p className="text-[10px] text-purple-800 font-medium">Write your message anonymously.</p>
-          </div>
-          <div className="space-y-1">
-            <div className="w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center text-purple-700 font-bold text-[10px]">2</div>
-            <p className="text-[10px] text-purple-800 font-medium">Our admin team reviews it for safety.</p>
-          </div>
-          <div className="space-y-1">
-            <div className="w-6 h-6 bg-purple-200 rounded-lg flex items-center justify-center text-purple-700 font-bold text-[10px]">3</div>
-            <p className="text-[10px] text-purple-800 font-medium">Approved messages appear on the board.</p>
-          </div>
+      <section className="bg-slate-50 rounded-[2rem] p-8 border border-slate-100 space-y-6">
+        <div className="flex items-center space-x-3">
+          <MessageCircle size={24} className="text-brand-secondary" />
+          <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">How it works</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { step: 1, text: "Write your message anonymously." },
+            { step: 2, text: "Our admin team reviews it for safety." },
+            { step: 3, text: "Approved messages appear on the board." }
+          ].map((item) => (
+            <div key={item.step} className="space-y-3">
+              <div className="w-8 h-8 bg-brand-secondary text-white rounded-xl flex items-center justify-center font-black text-xs">
+                {item.step}
+              </div>
+              <p className="text-xs text-slate-600 font-medium leading-relaxed">{item.text}</p>
+            </div>
+          ))}
         </div>
       </section>
     </div>

@@ -23,6 +23,12 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   const [replyTo, setReplyTo] = useState<any>(null);
   const storageKey = `liked_confession_${message.id}`;
 
+  const [commentCount, setCommentCount] = useState(message.comments_count || 0);
+
+  useEffect(() => {
+    setCommentCount(message.comments_count || 0);
+  }, [message.comments_count]);
+
   useEffect(() => {
     if (localStorage.getItem(storageKey)) setLiked(true);
   }, [message.id]);
@@ -125,6 +131,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
       
       setNewComment('');
       setReplyTo(null);
+      setCommentCount(prev => prev + 1);
       fetchComments(); // Refresh comments
       toast.success(replyTo ? 'Reply added!' : 'Comment added!');
     } catch (err: any) {
@@ -169,82 +176,81 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-[1rem] card-shadow border border-slate-100 relative overflow-hidden group flex flex-col"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden group flex flex-col hover:shadow-xl transition-all"
     >
-      <div className="p-3 space-y-3 flex-grow">
+      <div className="p-6 md:p-8 space-y-6 flex-grow">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1.5 text-purple-600">
-            <MessageSquare size={14} />
-            <span className="text-[9px] font-black uppercase tracking-widest">Anonymous</span>
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-brand-secondary border border-slate-100">
+              <User size={20} />
+            </div>
+            <div className="space-y-0.5">
+              <span className="block text-xs font-black text-slate-900 uppercase tracking-widest">Anonymous</span>
+              <div className="flex items-center space-x-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <Clock size={12} />
+                <span>{format(new Date(message.created_at), 'MMM d, yyyy HH:mm:ss')}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center space-x-1 text-slate-400 text-[9px] font-medium">
-            <Clock size={10} />
-            <span>{format(new Date(message.created_at), 'MMM d')}</span>
+          <div className="bg-green-50 text-green-600 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center space-x-1.5">
+            <ShieldCheck size={12} />
+            <span>Verified</span>
           </div>
         </div>
 
         <div 
-          className="cursor-pointer"
+          className="cursor-pointer space-y-4"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <p className="text-slate-700 text-xs leading-relaxed font-medium italic">
+          <p className="text-slate-600 font-medium leading-relaxed italic">
             "{isExpanded ? message.content : truncatedContent}"
           </p>
           {message.content.length > 150 && (
             <button 
-              className="mt-0.5 text-purple-600 text-[10px] font-bold flex items-center space-x-1 hover:underline"
+              className="text-brand-secondary font-black text-[10px] uppercase tracking-widest flex items-center space-x-1 hover:translate-x-1 transition-transform"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
               }}
             >
               <span>{isExpanded ? 'Show Less' : 'Read Full Story'}</span>
-              {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
           )}
         </div>
 
-        <div className="pt-2.5 border-t border-slate-50 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
+        <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
+          <div className="flex items-center space-x-6">
             <button 
               onClick={() => setShowComments(!showComments)}
-              className={`flex items-center space-x-1 transition-colors ${showComments ? 'text-purple-600' : 'text-slate-400 hover:text-purple-500'}`}
+              className={`flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors ${showComments ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
             >
-              <MessageSquare size={14} />
-              <span className="text-[9px] font-bold">{showComments ? 'Hide' : 'Comments'}</span>
+              <MessageSquare size={18} />
+              <span>{commentCount}</span>
             </button>
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSupport}
-              className={`flex items-center space-x-1 px-2.5 py-0.5 rounded-full transition-all ${
-                liked 
-                  ? 'bg-pink-50 text-pink-600 border border-pink-100' 
-                  : 'text-slate-500 hover:bg-slate-50 hover:text-pink-500 border border-transparent'
-              }`}
+              className={`flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors ${liked ? 'text-brand-accent' : 'text-slate-400 hover:text-brand-accent'}`}
             >
               <Heart 
-                size={14} 
-                className={`transition-all ${liked || localLikes > 0 ? 'fill-pink-500 text-pink-500' : ''} ${liked ? 'animate-bounce' : ''}`} 
+                size={18} 
+                fill={liked || localLikes > 0 ? 'currentColor' : 'none'}
+                className={liked ? 'animate-bounce' : ''} 
               />
-              <span className="text-xs font-black">{localLikes}</span>
-              <span className="text-[8px] font-bold uppercase tracking-tighter opacity-60">Support</span>
+              <span>{localLikes}</span>
             </motion.button>
             <div className="relative">
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowShareMenu(!showShareMenu)}
-                className={`flex items-center space-x-1 px-2.5 py-0.5 rounded-full transition-all ${
-                  showShareMenu 
-                    ? 'bg-purple-50 text-purple-600 border border-purple-100' 
-                    : 'text-slate-500 hover:bg-slate-50 hover:text-purple-500 border border-transparent'
-                }`}
+                className={`transition-colors ${showShareMenu ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
               >
-                <Share2 size={14} />
-                <span className="text-[8px] font-bold uppercase tracking-tighter opacity-60">Share</span>
+                <Share2 size={18} />
               </motion.button>
 
               <AnimatePresence>
@@ -328,7 +334,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
                           <p className="text-xs text-slate-700">{comment.content}</p>
                           <div className="flex items-center space-x-2.5 mt-0.5">
                             <span className="text-[9px] text-slate-400 block">
-                              {formatDistanceToNow(new Date(comment.created_at))} ago
+                              {format(new Date(comment.created_at), 'MMM d, yyyy HH:mm:ss')}
                             </span>
                             <button 
                               onClick={() => setReplyTo(comment)}
@@ -352,7 +358,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
                               <p className="text-[11px] text-slate-600">{reply.content}</p>
                               <div className="flex items-center space-x-2.5 mt-0.5">
                                 <span className="text-[8px] text-slate-400 block">
-                                  {formatDistanceToNow(new Date(reply.created_at))} ago
+                                  {format(new Date(reply.created_at), 'MMM d, yyyy HH:mm:ss')}
                                 </span>
                                 <button 
                                   onClick={() => setReplyTo(comment)}
@@ -435,8 +441,23 @@ const ConfessionsDisplayPage = () => {
         }
       })
       .on('postgres_changes' as any, { event: 'UPDATE', schema: 'public', table: 'messages' }, (payload: any) => {
-        // Only update if it's already in the list (e.g. likes update)
-        setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
+        // If it was just approved, add it to the list if not already there
+        if (payload.new.approved && !payload.old.approved) {
+          setMessages(prev => {
+            if (prev.find(m => m.id === payload.new.id)) return prev;
+            return [payload.new as Message, ...prev].slice(0, 50);
+          });
+        } else {
+          // Regular update (likes, etc.)
+          setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m));
+        }
+      })
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'message_comments' }, (payload: any) => {
+        setMessages(prev => prev.map(m => 
+          m.id === payload.new.message_id 
+            ? { ...m, comments_count: (m.comments_count || 0) + 1 } 
+            : m
+        ));
       })
       .subscribe();
 
@@ -452,7 +473,7 @@ const ConfessionsDisplayPage = () => {
 
       const { data, error } = await supabase
         .from('messages')
-        .select('*')
+        .select('id, content, likes, created_at, approved')
         .eq('approved', true)
         .order('created_at', { ascending: false })
         .range(from, to);
@@ -460,10 +481,28 @@ const ConfessionsDisplayPage = () => {
       if (error) throw error;
       
       if (data) {
+        const newMessages = data as Message[];
+        
+        // Fetch comment counts for these messages
+        const { data: commentData } = await supabase
+          .from('message_comments')
+          .select('message_id')
+          .in('message_id', newMessages.map(m => m.id));
+        
+        if (commentData) {
+          const counts: Record<string, number> = {};
+          commentData.forEach(c => {
+            counts[c.message_id] = (counts[c.message_id] || 0) + 1;
+          });
+          newMessages.forEach(m => {
+            m.comments_count = counts[m.id] || 0;
+          });
+        }
+
         if (pageNumber === 0) {
-          setMessages(data as Message[]);
+          setMessages(newMessages);
         } else {
-          setMessages(prev => [...prev, ...(data as Message[])]);
+          setMessages(prev => [...prev, ...newMessages]);
         }
         setHasMore(data.length === PAGE_SIZE);
       }
@@ -481,55 +520,41 @@ const ConfessionsDisplayPage = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-slate-50 relative overflow-hidden">
+    <div className="min-h-screen pt-24 pb-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
       <MetaTags 
         title={sharedConfession ? 'Anonymous Confession' : 'Campus Confessions'}
         description={sharedConfession ? sharedConfession.content.substring(0, 160) + '...' : 'Read anonymous confessions from your campus on CEE MEDIA.'}
         type="article"
       />
-      {/* Branded Background Pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03] select-none overflow-hidden">
-        <div className="absolute inset-0 flex flex-wrap items-center justify-center gap-x-32 gap-y-24 rotate-[-15deg] scale-125">
-          {Array.from({ length: 40 }).map((_, i) => (
-            <div key={i} className="flex items-center space-x-6">
-              <Logo iconClassName="w-10 h-10" showText={false} />
-              <div className="flex flex-col -space-y-2">
-                <span className="text-5xl font-black tracking-tighter">CEE</span>
-                <span className="text-lg font-bold tracking-[0.5em] opacity-60 ml-1">MEDIA</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto space-y-6 relative z-10">
+      <div className="max-w-5xl mx-auto space-y-12 relative z-10">
         <MetaTags 
           title={sharedConfession ? `Confession: ${sharedConfession.content.substring(0, 30)}...` : 'Campus Confessions'}
           description={sharedConfession ? sharedConfession.content.substring(0, 160) : 'Read and share anonymous campus confessions.'}
         />
         {/* Header */}
-        <div className="text-center space-y-1.5">
+        <div className="text-center space-y-4">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center space-x-1.5 bg-slate-900 text-white px-3 py-1.5 rounded-full text-[10px] font-bold"
+            className="inline-flex items-center space-x-2 bg-brand-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase"
           >
             <Logo iconClassName="w-4 h-4" showText={false} />
-            <span className="tracking-widest uppercase text-[9px]">VERIFIED & APPROVED</span>
+            <span>Verified & Approved</span>
           </motion.div>
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none"
+            className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none"
           >
-            ANONYMOUS <span className="text-orange-500">CONFESSIONS</span>
+            ANONYMOUS <span className="text-brand-accent">CONFESSIONS</span>
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-slate-500 text-xs sm:text-sm max-w-2xl mx-auto font-medium"
+            className="text-slate-500 text-sm md:text-base max-w-2xl mx-auto font-medium"
           >
             Real stories, real voices, completely anonymous. All messages are reviewed by our team before appearing here.
           </motion.p>
@@ -537,29 +562,44 @@ const ConfessionsDisplayPage = () => {
 
         {/* Messages Grid */}
         {loading && page === 0 ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-purple-600 border-t-transparent"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 h-64 animate-pulse p-8 space-y-6">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-100" />
+                  <div className="space-y-2">
+                    <div className="h-3 bg-slate-100 rounded w-24" />
+                    <div className="h-2 bg-slate-100 rounded w-16" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-slate-100 rounded w-full" />
+                  <div className="h-4 bg-slate-100 rounded w-full" />
+                  <div className="h-4 bg-slate-100 rounded w-2/3" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {messages.map((message) => (
                 <ConfessionCard key={message.id} message={message} />
               ))}
             </div>
             
             {hasMore && (
-              <div className="flex justify-center pt-8">
+              <div className="flex justify-center pt-12">
                 <button
                   onClick={loadMore}
                   disabled={loading}
-                  className="px-8 py-3 bg-white text-slate-900 rounded-full font-black text-xs border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center space-x-2 group"
+                  className="px-10 py-4 bg-white text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest border border-slate-100 shadow-sm hover:shadow-xl hover:border-brand-secondary transition-all flex items-center space-x-2 group"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>LOAD MORE CONFESSIONS</span>
+                      <span>Load More Confessions</span>
                       <ChevronDown size={14} className="group-hover:translate-y-0.5 transition-transform" />
                     </>
                   )}
@@ -570,9 +610,9 @@ const ConfessionsDisplayPage = () => {
         )}
 
         {!loading && messages.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-[1.25rem] border-2 border-dashed border-slate-200">
-            <MessageSquare size={32} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-400 font-medium text-sm">No approved confessions yet. Check back soon!</p>
+          <div className="text-center py-24 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100 space-y-4">
+            <MessageSquare size={48} className="mx-auto text-slate-200" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No approved confessions yet.</p>
           </div>
         )}
       </div>

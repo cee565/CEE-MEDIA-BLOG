@@ -2,23 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Post, PostComment } from '../types';
-import { Heart, MessageCircle, Share2, User, Calendar, Send, Link, Check, Search, X } from 'lucide-react';
+import { Heart, MessageCircle, Share2, User, Calendar, Send, Link, Check, Search, X, ExternalLink, ArrowLeft } from 'lucide-react';
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link as RouterLink } from 'react-router-dom';
 import MetaTags from '../components/MetaTags';
 
-const BlogCard = React.memo(({ post }: { post: Post }) => {
+const BlogCard = React.memo(({ post, fullView = false }: { post: Post, fullView?: boolean }) => {
   const [liked, setLiked] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(fullView);
   const [comments, setComments] = useState<PostComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [replyTo, setReplyTo] = useState<any>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const storageKey = `liked_post_${post.id}`;
+
+  const [commentCount, setCommentCount] = useState(post.comments_count || 0);
+
+  useEffect(() => {
+    setCommentCount(post.comments_count || 0);
+  }, [post.comments_count]);
 
   useEffect(() => {
     if (localStorage.getItem(storageKey)) setLiked(true);
@@ -115,6 +122,7 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
       
       setNewComment('');
       setReplyTo(null);
+      setCommentCount(prev => prev + 1);
       fetchComments();
       toast.success(replyTo ? 'Reply added!' : 'Comment added!');
     } catch (err: any) {
@@ -153,66 +161,90 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-[1.25rem] overflow-hidden card-shadow border border-slate-50 flex flex-col"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`bg-white rounded-[2rem] overflow-hidden border border-slate-100 flex flex-col group transition-all ${fullView ? 'border-none shadow-none' : 'hover:shadow-xl'}`}
     >
-      <div className="h-40 overflow-hidden relative">
-        <img 
-          src={post.image || `https://picsum.photos/seed/${post.id}/400/300?blur=1`} 
-          alt={post.title}
-          className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-          referrerPolicy="no-referrer"
-          loading="lazy"
-        />
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
-          <div className="flex items-center space-x-1.5">
-            <div className="bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-slate-700 flex items-center w-fit">
-              <Calendar size={10} className="mr-1" /> {format(new Date(post.created_at), 'MMM d, yyyy')}
-            </div>
-            <div className="bg-green-500/90 backdrop-blur-md px-2 py-1 rounded-full text-[8px] font-black text-white flex items-center w-fit uppercase tracking-widest">
-              <div className="w-1 h-1 bg-white rounded-full animate-ping mr-1" /> Live
+      {!fullView && (
+        <div className="h-48 overflow-hidden relative">
+          <img 
+            src={post.image || `https://picsum.photos/seed/${post.id}/600/400?blur=1`} 
+            alt={post.title}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            referrerPolicy="no-referrer"
+            loading="lazy"
+          />
+          <div className="absolute top-4 left-4 flex flex-col gap-2">
+            <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black text-slate-900 flex items-center w-fit uppercase tracking-widest shadow-sm">
+              <Calendar size={12} className="mr-1.5 text-brand-secondary" /> {format(new Date(post.created_at), 'MMM d, yyyy HH:mm:ss')}
             </div>
           </div>
+          {post.category && (
+            <div className="absolute bottom-4 left-4">
+              <div className="bg-brand-primary text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-lg">
+                {post.category}
+              </div>
+            </div>
+          )}
         </div>
+      )}
+
+      <div className={`p-6 flex-grow space-y-4 ${fullView ? 'px-0' : ''}`}>
+        {!fullView && (
+          <>
+            <h3 className="text-xl font-black text-slate-900 leading-tight tracking-tighter uppercase group-hover:text-brand-secondary transition-colors">
+              {post.url ? (
+                <a href={post.url} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-2">
+                  {post.title} <ExternalLink size={16} />
+                </a>
+              ) : post.title}
+            </h3>
+            
+            <p className="text-slate-500 text-sm line-clamp-3 font-medium leading-relaxed">{post.content}</p>
+            
+            <button 
+              onClick={() => {
+                window.scrollTo(0, 0);
+                setSearchParams({ id: post.id });
+              }}
+              className="text-brand-secondary text-[10px] font-black uppercase tracking-widest hover:underline flex items-center gap-1 group/btn"
+            >
+              Read Full Story <ArrowLeft size={12} className="rotate-180 group-hover/btn:translate-x-1 transition-transform" />
+            </button>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-brand-secondary border border-slate-100">
+                <User size={14} />
+              </div>
+              <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{post.author}</span>
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="p-3 flex-grow space-y-2">
-        <h3 className="text-base font-bold text-slate-800 leading-tight line-clamp-2">{post.title}</h3>
-        
-        <p className="text-slate-600 text-[10px] line-clamp-3">{post.content}</p>
-        
-        <div className="flex items-center space-x-1.5 pt-0.5">
-          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-            <User size={12} />
-          </div>
-          <span className="text-[10px] font-medium text-slate-700">{post.author}</span>
-        </div>
-      </div>
-
-      <div className="px-3 py-2.5 bg-slate-50/50 border-t border-slate-100 flex justify-between items-center">
-        <div className="flex space-x-3">
+      <div className={`px-6 py-4 bg-slate-50/30 border-t border-slate-50 flex justify-between items-center ${fullView ? 'px-0 bg-transparent border-none' : ''}`}>
+        <div className="flex space-x-6">
           <button 
             onClick={handleLike}
-            className={`flex items-center space-x-1 text-xs font-bold transition-colors ${liked ? 'text-red-500' : 'text-slate-500 hover:text-red-400'}`}
+            className={`flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors ${liked ? 'text-brand-accent' : 'text-slate-400 hover:text-brand-accent'}`}
           >
-            <Heart size={16} fill={liked ? 'currentColor' : 'none'} />
+            <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
             <span>{localLikes}</span>
           </button>
           <button 
             onClick={() => setShowComments(!showComments)}
-            className={`flex items-center space-x-1 text-xs font-bold transition-colors ${showComments ? 'text-blue-600' : 'text-slate-500 hover:text-blue-500'}`}
+            className={`flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors ${showComments ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
           >
-            <MessageCircle size={16} />
-            <span>Comments</span>
+            <MessageCircle size={18} />
+            <span>{commentCount}</span>
           </button>
         </div>
         <div className="relative">
           <button 
             onClick={() => setShowShareMenu(!showShareMenu)}
-            className={`transition-colors ${showShareMenu ? 'text-blue-600' : 'text-slate-400 hover:text-blue-500'}`}
+            className={`transition-colors ${showShareMenu ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
           >
-            <Share2 size={16} />
+            <Share2 size={18} />
           </button>
 
           <AnimatePresence>
@@ -356,7 +388,7 @@ const BlogCard = React.memo(({ post }: { post: Post }) => {
                   <button
                     type="submit"
                     disabled={!newComment.trim() || isSubmitting}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 bg-brand-primary text-white rounded-full flex items-center justify-center hover:bg-brand-secondary disabled:opacity-50 transition-colors"
                   >
                     <Send size={12} />
                   </button>
@@ -375,7 +407,7 @@ const BlogPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const postId = searchParams.get('id');
 
   const categories = ['All', 'Gist', 'News', 'Events', 'Drama', 'Trends'];
@@ -388,12 +420,28 @@ const BlogPage = () => {
     try {
       let query = supabase
         .from('posts')
-        .select('*');
+        .select('id, title, content, image, author, author_id, category, url, likes, created_at');
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
       if (data) {
         let formattedPosts = data as Post[];
+
+        // Fetch comment counts for these posts
+        const { data: commentData } = await supabase
+          .from('post_comments')
+          .select('post_id')
+          .in('post_id', formattedPosts.map(p => p.id));
+        
+        if (commentData) {
+          const counts: Record<string, number> = {};
+          commentData.forEach(c => {
+            counts[c.post_id] = (counts[c.post_id] || 0) + 1;
+          });
+          formattedPosts.forEach(p => {
+            p.comments_count = counts[p.id] || 0;
+          });
+        }
 
         // Filter by category
         if (selectedCategory !== 'All') {
@@ -425,13 +473,30 @@ const BlogPage = () => {
   useEffect(() => {
     fetchPosts();
 
-    // DO NOT use realtime for blog posts as per optimization rules
-    // "Only reload when user refreshes or navigates"
-    return () => {};
+    // Scroll to top if a specific post is loaded
+    if (postId) {
+      window.scrollTo(0, 0);
+    }
+
+    // Real-time subscription for comment counts
+    const channel = supabase
+      .channel('blog_comments_channel')
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'post_comments' }, (payload: any) => {
+        setPosts(prev => prev.map(p => 
+          p.id === payload.new.post_id 
+            ? { ...p, comments_count: (p.comments_count || 0) + 1 } 
+            : p
+        ));
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 py-12 space-y-12">
       <MetaTags 
         title={sharedPost ? sharedPost.title : 'Campus Blog'}
         description={sharedPost ? sharedPost.content.substring(0, 160) + '...' : 'Stay updated with stories that matter on campus.'}
@@ -439,66 +504,216 @@ const BlogPage = () => {
         type={sharedPost ? 'article' : 'website'}
       />
       
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Campus Blog</h1>
-          <p className="text-slate-500 text-sm">Stay updated with stories that matter.</p>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="relative flex-grow sm:flex-grow-0 sm:w-64">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search posts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 rounded-2xl bg-white border border-slate-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-50 outline-none transition-all text-sm font-medium shadow-sm"
-            />
+      {!postId && (
+        <>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+            <div className="space-y-2">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase">Campus Blog</h1>
+              <p className="text-slate-500 text-sm md:text-base font-medium">Stay updated with stories that matter.</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+              <div className="relative flex-grow sm:flex-grow-0 sm:w-80">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border border-slate-100 focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 outline-none transition-all text-sm font-medium shadow-sm"
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Categories */}
-      <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((category) => (
-          <button
-            key={category}
-            onClick={() => setSelectedCategory(category)}
-            className={`px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-              selectedCategory === category 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-100 scale-105' 
-                : 'bg-white text-slate-500 hover:bg-slate-50 border border-slate-100'
-            }`}
-          >
-            {category}
-          </button>
-        ))}
-      </div>
+          {/* Categories */}
+          <div className="flex items-center space-x-3 overflow-x-auto pb-4 scrollbar-hide">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+                  selectedCategory === category 
+                    ? 'bg-brand-primary text-white border-brand-primary shadow-lg shadow-brand-primary/20 scale-105' 
+                    : 'bg-white text-slate-500 hover:bg-slate-50 border-slate-100'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-12 space-y-2">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-400 text-[10px] font-bold animate-pulse">Fetching latest stories...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-white rounded-[2rem] overflow-hidden border border-slate-100 flex flex-col h-[450px] animate-pulse">
+              <div className="h-48 bg-slate-100" />
+              <div className="p-6 space-y-4 flex-grow">
+                <div className="h-8 bg-slate-100 rounded-xl w-3/4" />
+                <div className="space-y-2">
+                  <div className="h-4 bg-slate-100 rounded-lg w-full" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-full" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-2/3" />
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-50 flex justify-between items-center">
+                <div className="h-4 bg-slate-100 rounded-lg w-24" />
+                <div className="h-4 bg-slate-100 rounded-lg w-8" />
+              </div>
+            </div>
+          ))}
         </div>
+      ) : postId && sharedPost ? (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-4xl mx-auto space-y-8"
+        >
+          <button 
+            onClick={() => setSearchParams({})}
+            className="flex items-center space-x-2 text-slate-500 hover:text-brand-primary transition-colors font-black uppercase tracking-widest text-xs"
+          >
+            <ArrowLeft size={16} />
+            <span>Back to Blog</span>
+          </button>
+
+          <div className="bg-white rounded-[3rem] overflow-hidden border border-slate-100 shadow-2xl shadow-slate-200/50">
+            <div className="h-[400px] relative">
+              <img 
+                src={sharedPost.image || `https://picsum.photos/seed/${sharedPost.id}/1200/800`} 
+                alt={sharedPost.title}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-8 left-8 right-8">
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <div className="bg-brand-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                    {sharedPost.category || 'Gist'}
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/30">
+                    {format(new Date(sharedPost.created_at), 'MMMM d, yyyy')}
+                  </div>
+                </div>
+                <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none">
+                  {sharedPost.title}
+                </h1>
+              </div>
+            </div>
+
+            <div className="p-8 md:p-12 space-y-8">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-8">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-brand-secondary border-2 border-white shadow-sm">
+                    <User size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Written By</p>
+                    <p className="text-lg font-black text-slate-900 uppercase tracking-tight">{sharedPost.author}</p>
+                  </div>
+                </div>
+                
+                {sharedPost.url && (
+                  <a 
+                    href={sharedPost.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-brand-primary transition-all shadow-lg shadow-slate-900/20"
+                  >
+                    <span>Visit Source</span>
+                    <ExternalLink size={14} />
+                  </a>
+                )}
+              </div>
+
+              <div className="prose prose-slate max-w-none">
+                <p className="text-slate-600 text-lg md:text-xl leading-relaxed font-medium whitespace-pre-wrap">
+                  {sharedPost.content}
+                </p>
+              </div>
+
+              {/* Comments Section */}
+              <div id="comments" className="pt-12 border-t border-slate-100 space-y-8">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                    Comments ({sharedPost.comments_count || 0})
+                  </h3>
+                </div>
+                <BlogCard post={sharedPost} fullView={true} />
+              </div>
+            </div>
+          </div>
+
+          {/* Sticky Bottom Interaction Bar (Phoenix Browser Style) */}
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 p-3 md:hidden shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
+            <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+              <div className="flex-grow">
+                <div 
+                  onClick={() => {
+                    const el = document.getElementById('comments');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="flex items-center space-x-3 px-4 py-2.5 bg-slate-100 rounded-full text-slate-400 text-xs font-medium border border-slate-200/50 cursor-pointer"
+                >
+                  <MessageCircle size={16} />
+                  <span>Write a comment...</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-5 px-1">
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById('comments');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-slate-600 hover:text-brand-accent transition-colors flex flex-col items-center"
+                >
+                  <Heart size={22} className={sharedPost.likes > 0 ? 'text-brand-accent fill-current' : ''} />
+                  <span className="text-[9px] font-black uppercase mt-0.5">{sharedPost.likes || 0}</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById('comments');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-slate-600 hover:text-brand-secondary transition-colors flex flex-col items-center"
+                >
+                  <MessageCircle size={22} />
+                  <span className="text-[9px] font-black uppercase mt-0.5">{sharedPost.comments_count || 0}</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById('comments');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-slate-600 hover:text-brand-secondary transition-colors flex flex-col items-center"
+                >
+                  <Share2 size={22} />
+                  <span className="text-[9px] font-black uppercase mt-0.5">Share</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {posts.length > 0 ? (
             posts.map(post => <BlogCard key={post.id} post={post} />)
           ) : (
-            <div className="col-span-full text-center py-12 bg-white rounded-[1.5rem] card-shadow border border-slate-100 space-y-3">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
-                <Search size={32} className="text-slate-300" />
+            <div className="col-span-full text-center py-24 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100 space-y-6">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
+                <Search size={32} className="text-slate-200" />
               </div>
-              <div className="space-y-0.5">
-                <h3 className="text-lg font-bold text-slate-800">No posts found</h3>
-                <p className="text-slate-500 text-xs max-w-md mx-auto">
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">No posts found</h3>
+                <p className="text-slate-500 text-sm max-w-md mx-auto font-medium">
                   We couldn't find any blog posts matching your current search.
                 </p>
               </div>
               <button 
                 onClick={() => setSearchQuery('')}
-                className="px-5 py-2 bg-blue-600 text-white rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-xs"
+                className="px-8 py-3 bg-brand-primary text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-brand-secondary transition-all"
               >
                 Clear Search
               </button>

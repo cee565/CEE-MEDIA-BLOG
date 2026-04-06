@@ -53,60 +53,62 @@ const TeamMemberCard: React.FC<{ member: TeamMember }> = ({ member }) => {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
-      className="group bg-white rounded-[1rem] overflow-hidden card-shadow border border-slate-100 hover:border-pink-200 transition-all duration-500"
+      className="group bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 hover:border-brand-secondary hover:shadow-2xl transition-all duration-500 flex flex-col"
     >
-      <div className="aspect-[4/5] relative overflow-hidden">
+      <div className="aspect-[4/5] relative overflow-hidden bg-slate-50">
         <img 
           src={member.image || `https://picsum.photos/seed/${member.id}/400/500`} 
           alt={member.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
           referrerPolicy="no-referrer"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
         
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-6 right-6 z-10">
           <button 
             onClick={handleLike}
-            className={`flex items-center space-x-1 px-2 py-0.5 rounded-full backdrop-blur-md transition-all ${liked ? 'bg-pink-600 text-white' : 'bg-white/20 text-white hover:bg-white/40'}`}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl backdrop-blur-md transition-all ${liked ? 'bg-brand-accent text-brand-primary' : 'bg-white/20 text-white hover:bg-white/40'}`}
           >
-            <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
-            <span className="text-[9px] font-black">{localLikes}</span>
+            <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+            <span className="text-[10px] font-black uppercase tracking-widest">{localLikes}</span>
           </button>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-          <div className="flex space-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
-            <button className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-pink-600 transition-all">
-              <Twitter size={12} />
+        <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+          <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+            <button className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-brand-secondary hover:text-white transition-all">
+              <Twitter size={16} />
             </button>
-            <button className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-pink-600 transition-all">
-              <Linkedin size={12} />
+            <button className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-brand-secondary hover:text-white transition-all">
+              <Linkedin size={16} />
             </button>
-            <button className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white hover:text-pink-600 transition-all">
-              <Mail size={12} />
+            <button className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-brand-secondary hover:text-white transition-all">
+              <Mail size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="p-3 space-y-0.5 text-center">
-        <div className="flex items-center justify-center space-x-1">
-          <h3 className="text-lg font-black text-slate-800">{member.name}</h3>
-          <ShieldCheck size={14} className="text-blue-500" />
+      <div className="p-8 space-y-3 text-center flex-grow flex flex-col justify-center">
+        <div className="space-y-1">
+          <div className="flex items-center justify-center space-x-2">
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">{member.name}</h3>
+            <ShieldCheck size={18} className="text-brand-secondary" />
+          </div>
+          <p className="text-brand-secondary font-black text-[10px] uppercase tracking-[0.3em]">{member.role}</p>
         </div>
-        <p className="text-pink-600 font-bold text-[10px] uppercase tracking-widest">{member.role}</p>
         
         {member.bio && (
-          <p className="text-slate-500 text-[10px] line-clamp-3 pt-1.5 leading-relaxed italic">
+          <p className="text-slate-500 text-xs font-medium leading-relaxed italic opacity-80">
             "{member.bio}"
           </p>
         )}
         
-        <div className="pt-3 flex justify-center">
-          <button className="text-[9px] font-black text-slate-400 hover:text-slate-600 flex items-center space-x-1 uppercase tracking-tighter transition-colors">
+        <div className="pt-4 flex justify-center">
+          <button className="text-[10px] font-black text-slate-400 hover:text-brand-secondary flex items-center space-x-2 uppercase tracking-widest transition-colors group/btn">
             <span>View Profile</span>
-            <ExternalLink size={9} />
+            <ExternalLink size={12} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
           </button>
         </div>
       </div>
@@ -129,7 +131,7 @@ const TeamPage = () => {
     try {
       const { data, error } = await supabase
         .from('team')
-        .select('*')
+        .select('id, name, role, bio, image, likes, created_at')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -142,31 +144,32 @@ const TeamPage = () => {
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-16 px-4 sm:px-6 lg:px-8 bg-slate-50">
-      <div className="max-w-6xl mx-auto space-y-12">
+    <div className="min-h-screen pt-24 pb-24 px-4 sm:px-6 lg:px-8 bg-white">
+      <div className="max-w-6xl mx-auto space-y-24">
         {/* Header */}
-        <div className="text-center space-y-6 bg-slate-900 p-12 rounded-[2.5rem] shadow-2xl border border-white/5">
+        <div className="text-center space-y-8 bg-brand-primary p-16 md:p-24 rounded-[3rem] shadow-2xl relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)]"></div>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center space-x-1.5 bg-white/10 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]"
+            className="inline-flex items-center space-x-2 bg-white/10 text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] relative z-10"
           >
-            <Users size={14} />
+            <Users size={16} />
             <span>Meet the Visionaries</span>
           </motion.div>
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl font-black text-white tracking-tighter uppercase"
+            className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none relative z-10"
           >
-            The Minds Behind <span className="text-purple-400">CEE MEDIA</span>
+            THE MINDS BEHIND <span className="text-brand-accent">CEE MEDIA</span>
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-slate-400 text-sm sm:text-base max-w-2xl mx-auto font-medium"
+            className="text-indigo-100 text-lg md:text-xl max-w-2xl mx-auto font-medium tracking-tight opacity-90 relative z-10"
           >
             A diverse group of creators, thinkers, and storytellers dedicated to bringing you the best in entertainment and news.
           </motion.p>
@@ -174,11 +177,20 @@ const TeamPage = () => {
 
         {/* Team Grid */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-pink-600 border-t-transparent"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-[2.5rem] border border-slate-100 h-[500px] animate-pulse flex flex-col">
+                <div className="aspect-[4/5] bg-slate-100" />
+                <div className="p-8 space-y-4 flex-grow flex flex-col justify-center items-center">
+                  <div className="h-8 bg-slate-100 rounded-xl w-3/4" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-1/2" />
+                  <div className="h-4 bg-slate-100 rounded-lg w-full" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {team.map((member) => (
               <TeamMemberCard key={member.id} member={member} />
             ))}
@@ -186,9 +198,9 @@ const TeamPage = () => {
         )}
 
         {!loading && team.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-[1.25rem] border-2 border-dashed border-slate-200">
-            <Users size={32} className="mx-auto text-slate-200 mb-2" />
-            <p className="text-slate-400 font-medium text-sm">No team members listed yet.</p>
+          <div className="text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-100 space-y-4">
+            <Users size={48} className="mx-auto text-slate-200" />
+            <p className="text-slate-400 font-black uppercase tracking-widest text-sm">No team members listed yet.</p>
           </div>
         )}
       </div>

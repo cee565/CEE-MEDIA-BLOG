@@ -30,8 +30,11 @@ const AdminDashboard = () => {
   // Form states
   const [newPollGroup, setNewPollGroup] = useState({ title: '', description: '', image: null as File | null, duration: 'never', custom_expires_at: '' });
   const [newPoll, setNewPoll] = useState({ question: '', description: '', group_id: '', options: [{ text: '', image: null as File | null }, { text: '', image: null as File | null }], image: null as File | null, duration: 'never', custom_expires_at: '' });
-  const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '', category: 'Gist' });
-  const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '' });
+  const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '', category: 'Gist', url: '' });
+  const [newMessage, setNewMessage] = useState({ content: '', url: '' });
+  const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '', url: '' });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const [newAd, setNewAd] = useState({ name: '', media_url: '', media_type: 'image' as 'image' | 'video', link_url: '', description: '', mediaFile: null as File | null });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id: string; table: string; data: any } | null>(null);
@@ -124,16 +127,27 @@ const AdminDashboard = () => {
                 if (colErr.message.includes('is_ended')) missingColumns.push('is_ended');
               }
             } else if (table === 'posts') {
-              const { error: colErr } = await supabase.from('posts').select('image, author_id').limit(1);
+              const { error: colErr } = await supabase.from('posts').select('image, author_id, category, url, comments_count').limit(1);
               if (colErr && colErr.code === 'PGRST106') {
                 if (colErr.message.includes('image')) missingColumns.push('image');
                 if (colErr.message.includes('author_id')) missingColumns.push('author_id');
+                if (colErr.message.includes('category')) missingColumns.push('category');
+                if (colErr.message.includes('url')) missingColumns.push('url');
+                if (colErr.message.includes('comments_count')) missingColumns.push('comments_count');
+              }
+            } else if (table === 'messages') {
+              const { error: colErr } = await supabase.from('messages').select('likes, comments_count, url').limit(1);
+              if (colErr && colErr.code === 'PGRST106') {
+                if (colErr.message.includes('likes')) missingColumns.push('likes');
+                if (colErr.message.includes('comments_count')) missingColumns.push('comments_count');
+                if (colErr.message.includes('url')) missingColumns.push('url');
               }
             } else if (table === 'team') {
-              const { error: colErr } = await supabase.from('team').select('image, bio').limit(1);
+              const { error: colErr } = await supabase.from('team').select('image, bio, url').limit(1);
               if (colErr && colErr.code === 'PGRST106') {
                 if (colErr.message.includes('image')) missingColumns.push('image');
                 if (colErr.message.includes('bio')) missingColumns.push('bio');
+                if (colErr.message.includes('url')) missingColumns.push('url');
               }
             } else if (table === 'ads') {
               const { error: colErr } = await supabase.from('ads').select('media_url').limit(1);
@@ -497,16 +511,24 @@ const AdminDashboard = () => {
   const uploadMedia = async (file: File) => {
     try {
       if (!file) return '';
+      setIsUploading(true);
+      setUploadProgress(10);
       console.log("Starting upload for file:", file.name, "Type:", file.type, "Size:", file.size);
       
-      // Basic validation
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error("File too large. Maximum size is 5MB.");
+      // Validation: 10MB for images, 50MB for videos
+      const isVideo = file.type.startsWith('video/');
+      const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      
+      if (file.size > maxSize) {
+        throw new Error(`File too large. Maximum size is ${isVideo ? '50MB' : '10MB'}.`);
       }
 
+      setUploadProgress(30);
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
+
+      console.log("Uploading to path:", filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('media')
@@ -518,62 +540,77 @@ const AdminDashboard = () => {
 
       if (uploadError) {
         console.error("Supabase storage upload error:", uploadError);
-        if (uploadError.message === 'Failed to fetch') {
-          throw new Error("Network error: Could not reach Supabase Storage. Please check your internet connection.");
-        }
         throw uploadError;
       }
 
+      setUploadProgress(80);
       const { data } = supabase.storage.from('media').getPublicUrl(filePath);
       if (!data || !data.publicUrl) {
         throw new Error("Failed to get public URL for uploaded file.");
       }
       
+      setUploadProgress(100);
       console.log("Upload successful, public URL:", data.publicUrl);
+      
+      // Keep progress bar visible for a moment
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 1000);
+      
       return data.publicUrl;
     } catch (err: any) {
+      setIsUploading(false);
+      setUploadProgress(0);
       console.error("uploadMedia exception:", err);
-      if (err.message === 'Failed to fetch') {
-        throw new Error("Network error: Connection to Supabase failed. Check your internet.");
-      }
       throw err;
     }
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.title || !newPost.content) return;
+    if (!newPost.title || !newPost.content) {
+      showNotification("Title and Content are required", "error");
+      return;
+    }
 
     try {
       let imageUrl = '';
       if (newPost.image) {
-        imageUrl = await uploadMedia(newPost.image);
+        try {
+          imageUrl = await uploadMedia(newPost.image);
+        } catch (uploadErr: any) {
+          console.error("Image upload failed for post:", uploadErr);
+          showNotification(`Image upload failed: ${uploadErr.message || uploadErr}`, "error");
+          return;
+        }
       }
 
       const { data: postData, error: postError } = await supabase.from('posts').insert({
         title: newPost.title,
-        author: newPost.author,
+        author: newPost.author || 'Admin',
         content: newPost.content,
         image: imageUrl,
         author_id: newPost.author_id || null,
         category: newPost.category,
+        url: newPost.url || null,
         likes: 0
       }).select().single();
 
-      if (postError) throw postError;
+      if (postError) {
+        console.error("Supabase insert error (posts):", postError);
+        throw postError;
+      }
 
       if (postData) {
-        setPosts(prev => {
-          if (prev.find(p => p.id === postData.id)) return prev;
-          return [postData as Post, ...prev];
-        });
+        setPosts(prev => [postData as Post, ...prev]);
       }
 
       showNotification("Post created successfully", "success");
-      setNewPost({ title: '', author: '', content: '', image: null, author_id: '', category: 'Gist' });
-    } catch (e) {
+      setNewPost({ title: '', author: '', content: '', image: null, author_id: '', category: 'Gist', url: '' });
+    } catch (e: any) {
       console.error("Post creation failed", e);
-      showNotification("Failed to create post", "error");
+      showNotification(`Failed to create post: ${e.message || e}`, "error");
     }
   };
 
@@ -600,7 +637,8 @@ const AdminDashboard = () => {
         name: newTeamMember.name,
         role: newTeamMember.role,
         image: imageUrl,
-        bio: newTeamMember.bio
+        bio: newTeamMember.bio,
+        url: newTeamMember.url || null
       }).select().single();
 
       if (error) {
@@ -616,7 +654,7 @@ const AdminDashboard = () => {
       }
 
       showNotification("Team member added successfully", "success");
-      setNewTeamMember({ name: '', role: '', image: null, bio: '' });
+      setNewTeamMember({ name: '', role: '', image: null, bio: '', url: '' });
     } catch (e: any) {
       console.error("Team member creation failed", e);
       showNotification(`Failed to add team member: ${e.message || e}`, "error");
@@ -625,12 +663,27 @@ const AdminDashboard = () => {
 
   const handleCreateAd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAd.name || !newAd.link_url) return;
+    if (!newAd.name || !newAd.link_url) {
+      showNotification("Ad Name and Destination Link are required", "error");
+      return;
+    }
 
     try {
       let mediaUrl = newAd.media_url;
+      
       if (newAd.mediaFile) {
-        mediaUrl = await uploadMedia(newAd.mediaFile);
+        try {
+          mediaUrl = await uploadMedia(newAd.mediaFile);
+        } catch (uploadErr: any) {
+          console.error("Ad media upload failed:", uploadErr);
+          showNotification(`Ad media upload failed: ${uploadErr.message || uploadErr}`, "error");
+          return;
+        }
+      }
+
+      if (!mediaUrl) {
+        showNotification("Please upload a media file or provide a media URL", "error");
+        return;
       }
 
       const { data, error } = await supabase.from('ads').insert({
@@ -642,7 +695,10 @@ const AdminDashboard = () => {
         is_active: true
       }).select().single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase insert error (ads):", error);
+        throw error;
+      }
 
       if (data) {
         setAds(prev => {
@@ -653,9 +709,35 @@ const AdminDashboard = () => {
 
       showNotification("Ad created successfully", "success");
       setNewAd({ name: '', media_url: '', media_type: 'image', link_url: '', description: '', mediaFile: null });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Ad creation failed", e);
-      showNotification("Failed to create ad", "error");
+      showNotification(`Failed to create ad: ${e.message || e}`, "error");
+    }
+  };
+
+  const handleCreateMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.content) return;
+
+    try {
+      const { data, error } = await supabase.from('messages').insert({
+        content: newMessage.content,
+        url: newMessage.url || null,
+        approved: true, // Admin created messages are approved by default
+        likes: 0
+      }).select().single();
+
+      if (error) throw error;
+
+      if (data) {
+        setMessages(prev => [data as Message, ...prev]);
+      }
+
+      showNotification("Confession created successfully", "success");
+      setNewMessage({ content: '', url: '' });
+    } catch (e: any) {
+      console.error("Confession creation failed", e);
+      showNotification(`Failed to create confession: ${e.message || e}`, "error");
     }
   };
 
@@ -749,7 +831,44 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="space-y-6 pb-16">
+    <div className="space-y-6 pb-16 relative">
+      {/* Progress Bar */}
+      <AnimatePresence>
+        {isUploading && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-xl p-6 border-b border-slate-200 shadow-2xl"
+          >
+            <div className="max-w-7xl mx-auto space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-brand-secondary/10 flex items-center justify-center">
+                    <Upload className="text-brand-secondary animate-bounce" size={18} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-widest text-slate-800">Uploading Media</h4>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase">Please do not close this tab</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-black text-brand-secondary">{uploadProgress}%</span>
+                </div>
+              </div>
+              <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                <motion.div 
+                  className="h-full bg-gradient-to-r from-brand-secondary to-purple-600"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${uploadProgress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Notification */}
       <div className="fixed top-20 right-4 z-50 space-y-2">
         {notification && (
@@ -779,7 +898,14 @@ const AdminDashboard = () => {
         onSave={handleSaveEdit}
         title={`Edit ${editingItem?.table.slice(0, -1)}`}
         initialData={editingItem?.data || {}}
-        type={editingItem?.table === 'polls' ? 'poll' : editingItem?.table === 'posts' ? 'post' : editingItem?.table === 'team' ? 'team' : editingItem?.table === 'ads' ? 'ad' : 'message'}
+        type={
+          editingItem?.table === 'polls' ? 'poll' : 
+          editingItem?.table === 'posts' ? 'post' : 
+          editingItem?.table === 'team' ? 'team' : 
+          editingItem?.table === 'ads' ? 'ad' : 
+          editingItem?.table === 'poll_groups' ? 'poll_group' : 
+          'message'
+        }
         pollGroups={pollGroups}
         team={team}
       />
@@ -811,18 +937,25 @@ const AdminDashboard = () => {
         )}
       </AnimatePresence>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center">
-          <Logo iconClassName="w-10 h-10" />
-          <h2 className="text-2xl font-bold text-slate-800 ml-3">Admin Dashboard</h2>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-brand-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-brand-primary/20">
+            <Shield size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Admin Dashboard</h2>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Control Center</p>
+          </div>
         </div>
-        <div className="flex bg-slate-100 p-1 rounded-xl overflow-x-auto hide-scrollbar">
+        <div className="flex bg-slate-50 p-1.5 rounded-2xl overflow-x-auto hide-scrollbar border border-slate-100">
           {(['overview', 'poll_groups', 'polls', 'posts', 'messages', 'team', 'ads', 'comments', 'blog_comments'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all whitespace-nowrap ${
-                activeTab === tab ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                activeTab === tab 
+                  ? 'bg-brand-secondary text-white shadow-md' 
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-white'
               }`}
             >
               {tab.replace('_', ' ')}
@@ -990,6 +1123,7 @@ CREATE POLICY "Public Bucket Access" ON storage.buckets FOR SELECT USING (id = '
   image TEXT,
   bio TEXT,
   likes INTEGER DEFAULT 0,
+  url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE team ENABLE ROW LEVEL SECURITY;
@@ -1007,6 +1141,7 @@ CREATE POLICY "Allow All" ON team FOR ALL USING (true) WITH CHECK (true);`}
   image TEXT,
   bio TEXT,
   likes INTEGER DEFAULT 0,
+  url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE team ENABLE ROW LEVEL SECURITY;
@@ -1033,7 +1168,10 @@ CREATE POLICY "Allow All" ON team FOR ALL USING (true) WITH CHECK (true);`);
   content TEXT NOT NULL,
   image TEXT,
   author_id UUID REFERENCES team(id),
+  category TEXT DEFAULT 'Gist',
+  url TEXT,
   likes INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
@@ -1051,7 +1189,10 @@ CREATE POLICY "Allow All" ON posts FOR ALL USING (true) WITH CHECK (true);`}
   content TEXT NOT NULL,
   image TEXT,
   author_id UUID REFERENCES team(id),
+  category TEXT DEFAULT 'Gist',
+  url TEXT,
   likes INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
@@ -1076,7 +1217,9 @@ CREATE POLICY "Allow All" ON posts FOR ALL USING (true) WITH CHECK (true);`);
   content TEXT NOT NULL,
   author TEXT DEFAULT 'Anonymous',
   likes INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
   approved BOOLEAN DEFAULT FALSE,
+  url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -1092,7 +1235,9 @@ CREATE POLICY "Allow All" ON messages FOR ALL USING (true) WITH CHECK (true);`}
   content TEXT NOT NULL,
   author TEXT DEFAULT 'Anonymous',
   likes INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
   approved BOOLEAN DEFAULT FALSE,
+  url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
@@ -1351,6 +1496,96 @@ CREATE POLICY "Allow All" ON post_comments FOR ALL USING (true) WITH CHECK (true
                     </button>
                   </div>
                 )}
+                {missingTables.some(t => t === 'message_comments') && (
+                  <div className="p-4 bg-slate-900 rounded-3xl space-y-3 border border-slate-800">
+                    <p className="text-[10px] text-orange-400 font-bold uppercase">SQL Fix for Confession Comments:</p>
+                    <code className="block text-[9px] text-slate-300 font-mono break-all bg-slate-800 p-3 rounded-xl border border-slate-700 whitespace-pre-wrap">
+{`CREATE TABLE IF NOT EXISTS message_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  author TEXT DEFAULT 'Anonymous',
+  parent_id UUID REFERENCES message_comments(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE message_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON message_comments;
+DROP POLICY IF EXISTS "Allow All" ON message_comments;
+CREATE POLICY "Public Read" ON message_comments FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON message_comments FOR ALL USING (true) WITH CHECK (true);`}
+                    </code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS message_comments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  message_id UUID REFERENCES messages(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  author TEXT DEFAULT 'Anonymous',
+  parent_id UUID REFERENCES message_comments(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+ALTER TABLE message_comments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON message_comments;
+DROP POLICY IF EXISTS "Allow All" ON message_comments;
+CREATE POLICY "Public Read" ON message_comments FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON message_comments FOR ALL USING (true) WITH CHECK (true);`);
+                        showNotification("SQL copied to clipboard", "success");
+                      }}
+                      className="w-full py-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold rounded-xl transition-colors"
+                    >
+                      Copy SQL
+                    </button>
+                  </div>
+                )}
+                {missingTables.some(t => t === 'analytics') && (
+                  <div className="p-4 bg-slate-900 rounded-3xl space-y-3 border border-slate-800">
+                    <p className="text-[10px] text-blue-400 font-bold uppercase">SQL Fix for Analytics:</p>
+                    <code className="block text-[9px] text-slate-300 font-mono break-all bg-slate-800 p-3 rounded-xl border border-slate-700 whitespace-pre-wrap">
+{`CREATE TABLE IF NOT EXISTS analytics (
+  id TEXT PRIMARY KEY,
+  total_visitors INTEGER DEFAULT 0,
+  total_votes INTEGER DEFAULT 0,
+  active_polls INTEGER DEFAULT 0,
+  total_posts INTEGER DEFAULT 0,
+  team_members INTEGER DEFAULT 0,
+  active_ads INTEGER DEFAULT 0,
+  total_comments INTEGER DEFAULT 0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+INSERT INTO analytics (id, total_visitors) VALUES ('main', 0) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON analytics;
+DROP POLICY IF EXISTS "Allow All" ON analytics;
+CREATE POLICY "Public Read" ON analytics FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON analytics FOR ALL USING (true) WITH CHECK (true);`}
+                    </code>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(`CREATE TABLE IF NOT EXISTS analytics (
+  id TEXT PRIMARY KEY,
+  total_visitors INTEGER DEFAULT 0,
+  total_votes INTEGER DEFAULT 0,
+  active_polls INTEGER DEFAULT 0,
+  total_posts INTEGER DEFAULT 0,
+  team_members INTEGER DEFAULT 0,
+  active_ads INTEGER DEFAULT 0,
+  total_comments INTEGER DEFAULT 0,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+INSERT INTO analytics (id, total_visitors) VALUES ('main', 0) ON CONFLICT (id) DO NOTHING;
+ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read" ON analytics;
+DROP POLICY IF EXISTS "Allow All" ON analytics;
+CREATE POLICY "Public Read" ON analytics FOR SELECT USING (true);
+CREATE POLICY "Allow All" ON analytics FOR ALL USING (true) WITH CHECK (true);`);
+                        showNotification("SQL copied to clipboard", "success");
+                      }}
+                      className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl transition-colors"
+                    >
+                      Copy SQL
+                    </button>
+                  </div>
+                )}
                 {missingTables.some(t => t === 'ads') && (
                   <div className="p-4 bg-slate-900 rounded-3xl space-y-3 border border-slate-800">
                     <code className="block text-[9px] text-slate-300 font-mono break-all bg-slate-800 p-3 rounded-xl border border-slate-700 whitespace-pre-wrap">
@@ -1400,49 +1635,71 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
           )}
 
           {/* Stats Cards */}
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <Users className="text-blue-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Total Visitors</span>
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <Users size={24} />
+              </div>
+              <TrendingUp size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">{analytics?.total_visitors || 0}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Visitors</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{analytics?.total_visitors || 0}</h3>
           </div>
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <TrendingUp className="text-purple-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Total Votes</span>
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-brand-primary rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <TrendingUp size={24} />
+              </div>
+              <Activity size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">
-              {polls.reduce((acc, p) => acc + (p.total_votes || 0), 0)}
-            </p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Votes</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">
+              {polls.reduce((acc, p) => acc + (p.total_votes || 0), 0).toLocaleString()}
+            </h3>
           </div>
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <BarChart3 className="text-green-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Active Polls</span>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-brand-secondary rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <BarChart3 size={24} />
+              </div>
+              <PieChart size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">{polls.length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Polls</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{polls.length}</h3>
           </div>
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <BookOpen className="text-orange-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Total Posts</span>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-brand-accent rounded-2xl flex items-center justify-center text-brand-primary shadow-lg group-hover:scale-110 transition-transform">
+                <BookOpen size={24} />
+              </div>
+              <Edit3 size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">{posts.length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Posts</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{posts.length}</h3>
           </div>
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <Users className="text-pink-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Team Members</span>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <Users size={24} />
+              </div>
+              <Shield size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">{team.length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Team Members</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{team.length}</h3>
           </div>
-          <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
-            <div className="flex items-center justify-between">
-              <Megaphone className="text-yellow-500" size={18} />
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Active Ads</span>
+
+          <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                <Megaphone size={24} />
+              </div>
+              <Monitor size={20} className="text-slate-200" />
             </div>
-            <p className="text-2xl font-black text-slate-800">{ads.filter(a => a.is_active).length}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Active Ads</p>
+            <h3 className="text-4xl font-black text-slate-900 tracking-tighter">{ads.filter(a => a.is_active).length}</h3>
           </div>
           <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-1">
             <div className="flex items-center justify-between">
@@ -1467,7 +1724,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Group Title</label>
                     <input
                       type="text"
-                      value={newPollGroup.title}
+                      value={newPollGroup.title || ''}
                       onChange={(e) => setNewPollGroup({ ...newPollGroup, title: e.target.value })}
                       className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-medium"
                       placeholder="e.g., Presidential Election 2024"
@@ -1476,7 +1733,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Description</label>
                     <textarea
-                      value={newPollGroup.description}
+                      value={newPollGroup.description || ''}
                       onChange={(e) => setNewPollGroup({ ...newPollGroup, description: e.target.value })}
                       className="w-full px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none transition-all text-sm font-medium h-24"
                       placeholder="Describe this poll group..."
@@ -1506,7 +1763,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                         ) : (
                           <div className="flex flex-col items-center text-slate-400">
                             <Upload size={24} className="mb-2" />
-                            <span className="text-xs font-bold uppercase">Upload Image</span>
+                            <span className="text-xs font-bold uppercase">Upload Group Image</span>
                           </div>
                         )}
                       </label>
@@ -1516,7 +1773,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Duration</label>
                       <select
-                        value={newPollGroup.duration}
+                        value={newPollGroup.duration || 'never'}
                         onChange={(e) => setNewPollGroup({ ...newPollGroup, duration: e.target.value })}
                         className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-medium"
                       >
@@ -1534,7 +1791,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Expires At</label>
                         <input
                           type="datetime-local"
-                          value={newPollGroup.custom_expires_at}
+                          value={newPollGroup.custom_expires_at || ''}
                           onChange={(e) => setNewPollGroup({ ...newPollGroup, custom_expires_at: e.target.value })}
                           className="w-full px-5 py-3 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none transition-all font-medium"
                         />
@@ -1601,7 +1858,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Poll Group (Optional)</label>
                 <select
-                  value={newPoll.group_id}
+                  value={newPoll.group_id || ''}
                   onChange={(e) => setNewPoll({ ...newPoll, group_id: e.target.value })}
                   className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-xs"
                 >
@@ -1614,13 +1871,13 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <input
                 type="text"
                 placeholder="Poll Question"
-                value={newPoll.question}
+                value={newPoll.question || ''}
                 onChange={(e) => setNewPoll({ ...newPoll, question: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm"
               />
               <textarea
                 placeholder="Poll Description (Optional)"
-                value={newPoll.description}
+                value={newPoll.description || ''}
                 onChange={(e) => setNewPoll({ ...newPoll, description: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm min-h-[80px] resize-none"
               />
@@ -1643,7 +1900,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Poll Duration</label>
                 <select
-                  value={newPoll.duration}
+                  value={newPoll.duration || 'never'}
                   onChange={(e) => setNewPoll({ ...newPoll, duration: e.target.value })}
                   className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-xs"
                 >
@@ -1661,7 +1918,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   <label className="text-xs font-bold text-slate-400 uppercase ml-2">Custom Expiration Date & Time</label>
                   <input
                     type="datetime-local"
-                    value={newPoll.custom_expires_at}
+                    value={newPoll.custom_expires_at || ''}
                     onChange={(e) => setNewPoll({ ...newPoll, custom_expires_at: e.target.value })}
                     className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-sm"
                   />
@@ -1687,7 +1944,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   <input
                     type="text"
                     placeholder={`Option ${i + 1} text`}
-                    value={opt.text}
+                    value={opt.text || ''}
                     onChange={(e) => {
                       const opts = [...newPoll.options];
                       opts[i] = { ...opts[i], text: e.target.value };
@@ -1745,8 +2002,8 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                         )}
                       </div>
                       <p className="text-[10px] text-slate-400">
-                        {poll.total_votes} votes • {poll.likes || 0} likes • {format(new Date(poll.created_at), 'MMM d, yyyy')}
-                        {poll.expires_at && !isEnded && ` • Ends ${format(new Date(poll.expires_at), 'MMM d, HH:mm')}`}
+                        {poll.total_votes} votes • {poll.likes || 0} likes • {format(new Date(poll.created_at), 'MMM d, yyyy HH:mm:ss')}
+                        {poll.expires_at && !isEnded && ` • Ends ${format(new Date(poll.expires_at), 'MMM d, HH:mm:ss')}`}
                       </p>
                     </div>
                     <div className="flex space-x-1.5">
@@ -1806,7 +2063,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <input
                 type="text"
                 placeholder="Post Title"
-                value={newPost.title}
+                value={newPost.title || ''}
                 onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 text-sm"
               />
@@ -1816,7 +2073,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   <input
                     type="text"
                     placeholder="Author Name"
-                    value={newPost.author}
+                    value={newPost.author || ''}
                     onChange={(e) => setNewPost({ ...newPost, author: e.target.value })}
                     className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 text-xs"
                   />
@@ -1824,7 +2081,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-bold text-slate-400 ml-2 uppercase tracking-wider">Link to Team Member</label>
                   <select
-                    value={newPost.author_id}
+                    value={newPost.author_id || ''}
                     onChange={(e) => {
                       const selectedTeam = team.find(t => t.id === e.target.value);
                       setNewPost({ 
@@ -1844,7 +2101,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-bold text-slate-400 ml-2 uppercase tracking-wider">Category</label>
                   <select
-                    value={newPost.category}
+                    value={newPost.category || 'Gist'}
                     onChange={(e) => setNewPost({ ...newPost, category: e.target.value })}
                     className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-bold text-slate-600 text-xs"
                   >
@@ -1872,9 +2129,16 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               </div>
               <textarea
                 placeholder="Post Content"
-                value={newPost.content}
+                value={newPost.content || ''}
                 onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                 className="w-full h-32 p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 resize-none text-sm"
+              />
+              <input
+                type="text"
+                placeholder="External URL (Optional)"
+                value={newPost.url || ''}
+                onChange={(e) => setNewPost({ ...newPost, url: e.target.value })}
+                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 text-sm"
               />
               <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition-all text-xs">
                 Publish Post
@@ -1903,6 +2167,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                       content: post.content, 
                       image: post.image, 
                       category: post.category || 'Gist',
+                      url: post.url,
                       likes: post.likes
                     })}
                     className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-colors"
@@ -1923,54 +2188,100 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
       )}
 
       {activeTab === 'messages' && (
-        <div className="space-y-3">
-          {messages.map((msg) => (
-            <div key={msg.id} className={`bg-white p-4 rounded-[1.5rem] border ${msg.approved ? 'border-green-100 bg-green-50/10' : 'border-orange-100 bg-orange-50/10'} card-shadow space-y-3`}>
-              <p className="text-slate-700 italic leading-relaxed text-sm">"{msg.content}"</p>
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-slate-400">{format(new Date(msg.created_at), 'MMM d, h:mm a')}</span>
-                <div className="flex space-x-1.5">
-                  <button
-                    onClick={() => handleEdit(msg.id, 'messages', { content: msg.content, approved: msg.approved, likes: msg.likes })}
-                    className="p-2 text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"
-                    title="Edit"
-                  >
-                    <Edit size={16} />
-                  </button>
-                  <button
-                    onClick={() => setMessageApproval(msg.id, true)}
-                    className={`p-2 rounded-xl transition-all shadow-sm ${
-                      msg.approved ? 'bg-green-500 text-white' : 'bg-green-100 text-green-600'
-                    }`}
-                    title="Approve"
-                  >
-                    <Check size={16} />
-                  </button>
-                  <button
-                    onClick={() => setMessageApproval(msg.id, false)}
-                    className={`p-2 rounded-xl transition-all shadow-sm ${
-                      !msg.approved ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-600'
-                    }`}
-                    title="Reject (Unapprove)"
-                  >
-                    <X size={16} />
-                  </button>
-                  <button 
-                    onClick={() => confirmDelete(msg.id, 'messages')} 
-                    className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
-                    title="Delete Permanently"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-orange-100 text-orange-600 rounded-xl">
+                <MessageSquare size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Create New Confession</h3>
+            </div>
+            <form onSubmit={handleCreateMessage} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">Confession Content</label>
+                <textarea
+                  value={newMessage.content}
+                  onChange={(e) => setNewMessage({ ...newMessage, content: e.target.value })}
+                  className="w-full h-32 p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-orange-400 resize-none font-medium text-slate-700"
+                  placeholder="Type the confession here..."
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">External URL (Optional)</label>
+                <input
+                  type="text"
+                  value={newMessage.url}
+                  onChange={(e) => setNewMessage({ ...newMessage, url: e.target.value })}
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-orange-400 font-medium text-slate-700"
+                  placeholder="https://example.com"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-200 transition-all flex items-center justify-center space-x-2"
+              >
+                <Plus size={20} />
+                <span>Post Confession</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-3">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`bg-white p-4 rounded-[1.5rem] border ${msg.approved ? 'border-green-100 bg-green-50/10' : 'border-orange-100 bg-orange-50/10'} card-shadow space-y-3`}>
+                <p className="text-slate-700 italic leading-relaxed text-sm">"{msg.content}"</p>
+                {msg.url && (
+                  <a href={msg.url} target="_blank" rel="noopener noreferrer" className="text-xs text-orange-500 hover:underline flex items-center">
+                    <Globe size={12} className="mr-1" />
+                    Visit Link
+                  </a>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-slate-400">{format(new Date(msg.created_at), 'MMM d, h:mm a')}</span>
+                  <div className="flex space-x-1.5">
+                    <button
+                      onClick={() => handleEdit(msg.id, 'messages', { content: msg.content, approved: msg.approved, likes: msg.likes, url: msg.url })}
+                      className="p-2 text-slate-400 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all"
+                      title="Edit"
+                    >
+                      <Edit size={16} />
+                    </button>
+                    <button
+                      onClick={() => setMessageApproval(msg.id, true)}
+                      className={`p-2 rounded-xl transition-all shadow-sm ${
+                        msg.approved ? 'bg-green-500 text-white' : 'bg-green-100 text-green-600'
+                      }`}
+                      title="Approve"
+                    >
+                      <Check size={16} />
+                    </button>
+                    <button
+                      onClick={() => setMessageApproval(msg.id, false)}
+                      className={`p-2 rounded-xl transition-all shadow-sm ${
+                        !msg.approved ? 'bg-orange-500 text-white' : 'bg-orange-100 text-orange-600'
+                      }`}
+                      title="Reject (Unapprove)"
+                    >
+                      <X size={16} />
+                    </button>
+                    <button 
+                      onClick={() => confirmDelete(msg.id, 'messages')} 
+                      className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
+                      title="Delete Permanently"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-          {messages.length === 0 && (
-            <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
-              <p className="text-slate-400 text-sm">No messages to manage.</p>
-            </div>
-          )}
+            ))}
+            {messages.length === 0 && (
+              <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
+                <p className="text-slate-400 text-sm">No messages to manage.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1985,22 +2296,29 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <input
                 type="text"
                 placeholder="Full Name"
-                value={newTeamMember.name}
+                value={newTeamMember.name || ''}
                 onChange={(e) => setNewTeamMember({ ...newTeamMember, name: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400 text-sm"
               />
               <input
                 type="text"
                 placeholder="Role (e.g. CEO, Editor)"
-                value={newTeamMember.role}
+                value={newTeamMember.role || ''}
                 onChange={(e) => setNewTeamMember({ ...newTeamMember, role: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400 text-sm"
               />
               <textarea
                 placeholder="Bio (Optional)"
-                value={newTeamMember.bio}
+                value={newTeamMember.bio || ''}
                 onChange={(e) => setNewTeamMember({ ...newTeamMember, bio: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400 resize-none h-20 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="External URL (Optional)"
+                value={newTeamMember.url || ''}
+                onChange={(e) => setNewTeamMember({ ...newTeamMember, url: e.target.value })}
+                className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-pink-400 text-sm"
               />
               <div className="relative">
                 <input
@@ -2039,7 +2357,14 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 </div>
                 <div className="flex space-x-1.5">
                   <button 
-                    onClick={() => handleEdit(member.id, 'team', { name: member.name, role: member.role, image: member.image, likes: member.likes })}
+                    onClick={() => handleEdit(member.id, 'team', { 
+                      name: member.name, 
+                      role: member.role, 
+                      bio: member.bio, 
+                      image: member.image,
+                      url: member.url,
+                      likes: member.likes
+                    })}
                     className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-colors"
                   >
                     <Edit size={16} />
@@ -2073,13 +2398,13 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               <input
                 type="text"
                 placeholder="Ad Name"
-                value={newAd.name}
+                value={newAd.name || ''}
                 onChange={(e) => setNewAd({ ...newAd, name: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
               />
               <div className="grid grid-cols-2 gap-3">
                 <select
-                  value={newAd.media_type}
+                  value={newAd.media_type || 'image'}
                   onChange={(e) => setNewAd({ ...newAd, media_type: e.target.value as 'image' | 'video' })}
                   className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 font-bold text-slate-600 text-xs"
                 >
@@ -2108,7 +2433,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <input
                   type="text"
                   placeholder="https://example.com/image.jpg"
-                  value={newAd.media_url}
+                  value={newAd.media_url || ''}
                   onChange={(e) => setNewAd({ ...newAd, media_url: e.target.value })}
                   className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-xs"
                 />
@@ -2118,14 +2443,14 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <input
                   type="text"
                   placeholder="https://yourlink.com"
-                  value={newAd.link_url}
+                  value={newAd.link_url || ''}
                   onChange={(e) => setNewAd({ ...newAd, link_url: e.target.value })}
                   className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
                 />
               </div>
               <textarea
                 placeholder="Short Description (Optional)"
-                value={newAd.description}
+                value={newAd.description || ''}
                 onChange={(e) => setNewAd({ ...newAd, description: e.target.value })}
                 className="w-full h-20 p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 resize-none text-sm"
               />

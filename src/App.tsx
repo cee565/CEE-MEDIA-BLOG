@@ -25,36 +25,43 @@ const Navbar = () => {
   const location = useLocation();
 
   const navLinks = [
-    { name: 'Home', path: '/', icon: Home },
-    { name: 'Vote', path: '/vote', icon: Vote },
-    { name: 'Blog', path: '/blog', icon: BookOpen },
-    { name: 'Confessions', path: '/confessions', icon: MessageSquare },
-    { name: 'Write Message', path: '/confessions/submit', icon: Zap },
-    { name: 'Team', path: '/team', icon: Users },
+    { name: 'Home', path: '/', icon: Home, prefetch: () => import('./pages/HomePage') },
+    { name: 'Vote', path: '/vote', icon: Vote, prefetch: () => import('./pages/VotePage') },
+    { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
+    { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
+    { name: 'Write Message', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
+    { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
   ];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-slate-900/80 backdrop-blur-xl z-50 border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.2)]">
+    <nav className="fixed top-0 left-0 right-0 bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="flex items-center group transition-transform hover:scale-105 active:scale-95">
-            <Logo iconClassName="w-14 h-14" dark={true} />
+        <div className="flex justify-between h-20 items-center">
+          <Link to="/" className="flex items-center group transition-all active:scale-95 hover:scale-105">
+            <Logo iconClassName="w-12 h-12" dark={false} />
           </Link>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center space-x-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+          <div className="hidden md:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs font-black transition-all duration-300 relative ${
+                onMouseEnter={() => link.prefetch()}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-[10px] font-black transition-all duration-200 relative uppercase tracking-widest ${
                   location.pathname === link.path 
-                    ? 'bg-white text-slate-900 shadow-sm scale-105' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/10'
+                    ? 'text-brand-primary bg-slate-50' 
+                    : 'text-slate-400 hover:text-brand-secondary hover:bg-slate-50/50'
                 }`}
               >
-                <link.icon size={16} strokeWidth={2.5} />
-                <span className="tracking-tight uppercase">{link.name}</span>
+                <link.icon size={14} strokeWidth={3} />
+                <span>{link.name}</span>
+                {location.pathname === link.path && (
+                  <motion.div 
+                    layoutId="nav-underline"
+                    className="absolute bottom-0 left-4 right-4 h-0.5 bg-brand-accent rounded-full"
+                  />
+                )}
               </Link>
             ))}
           </div>
@@ -62,7 +69,7 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-3 rounded-2xl text-slate-300 hover:bg-white/10 transition-colors"
+            className="md:hidden p-3 rounded-2xl text-slate-600 hover:bg-slate-50 transition-colors"
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -73,24 +80,24 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-slate-900/95 backdrop-blur-xl border-b border-white/10 px-4 pt-2 pb-8 space-y-2 overflow-hidden"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="md:hidden bg-white border-b border-slate-100 px-4 pt-2 pb-8 space-y-1 shadow-xl"
           >
             {navLinks.map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center space-x-4 p-4 rounded-2xl text-base font-black transition-all ${
+                className={`flex items-center space-x-4 p-4 rounded-2xl text-sm font-black transition-all uppercase tracking-widest ${
                   location.pathname === link.path 
-                    ? 'bg-white text-slate-900 shadow-lg scale-[1.02]' 
-                    : 'text-slate-400 hover:bg-white/5'
+                    ? 'bg-brand-primary text-white shadow-lg' 
+                    : 'text-slate-500 hover:bg-slate-50'
                 }`}
               >
-                <link.icon size={22} strokeWidth={2.5} />
-                <span className="tracking-tight uppercase">{link.name}</span>
+                <link.icon size={18} strokeWidth={3} />
+                <span>{link.name}</span>
               </Link>
             ))}
           </motion.div>
@@ -217,7 +224,7 @@ const App = () => {
           <ScrollToTop />
           <div className="min-h-screen flex flex-col pt-16">
             <Navbar />
-            <main className="flex-grow">
+            <main className="flex-grow min-h-[80vh]">
               <React.Suspense fallback={
                 <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
                   <div className="relative">

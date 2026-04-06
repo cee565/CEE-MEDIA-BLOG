@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { TrendingUp, BookOpen, MessageCircle, Zap, ChevronRight, Send, Users, Activity, Heart, Share2, Link as LinkIcon, Check, User } from 'lucide-react';
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { Link } from 'react-router-dom';
@@ -46,26 +45,26 @@ const HomePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch trending poll
+        // Fetch trending poll - optimized select
         const { data: polls } = await supabase
           .from('polls')
-          .select('*')
+          .select('id, question, description, options, image, total_votes')
           .order('total_votes', { ascending: false })
           .limit(1);
         if (polls && polls.length > 0) setTrendingPoll(polls[0] as Poll);
 
-        // Fetch hot post
+        // Fetch hot post - optimized select
         const { data: posts } = await supabase
           .from('posts')
-          .select('*')
+          .select('id, title, author, content, image, category, likes')
           .order('likes', { ascending: false })
           .limit(1);
         if (posts && posts.length > 0) setHotPost(posts[0] as Post);
 
-        // Fetch latest approved message
+        // Fetch latest approved message - optimized select
         const { data: messages } = await supabase
           .from('messages')
-          .select('*')
+          .select('id, content, created_at')
           .eq('approved', true)
           .order('created_at', { ascending: false })
           .limit(1);
@@ -99,380 +98,213 @@ const HomePage = () => {
     };
     fetchData();
 
-    // No real-time on home page to save resources as per optimization rules
     return () => {};
   }, []);
 
   const categories = [
-    { name: 'Voting', icon: TrendingUp, color: 'bg-purple-500', path: '/vote' },
-    { name: 'Blog', icon: BookOpen, color: 'bg-blue-500', path: '/blog' },
-    { name: 'Confessions', icon: MessageCircle, color: 'bg-orange-500', path: '/confessions' },
-    { name: 'Write Message', icon: Send, color: 'bg-green-500', path: '/confessions/submit' },
-    { name: 'Campus Gist', icon: Zap, color: 'bg-pink-500', path: '/blog' },
+    { name: 'Voting', icon: TrendingUp, path: '/vote' },
+    { name: 'Blog', icon: BookOpen, path: '/blog' },
+    { name: 'Confessions', icon: MessageCircle, path: '/confessions' },
+    { name: 'Write Message', icon: Send, path: '/confessions/submit' },
+    { name: 'Campus Gist', icon: Zap, path: '/blog' },
   ];
 
   return (
-    <div className="space-y-0">
+    <div className="min-h-screen bg-white brand-grid">
       <MetaTags />
       <AdsBoard />
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-            x: [0, 100, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-24 -left-24 w-96 h-96 bg-purple-500/10 blur-[100px] rounded-full"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.3, 1],
-            rotate: [0, -90, 0],
-            x: [0, -100, 0],
-            y: [0, -50, 0],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute top-1/2 -right-24 w-[500px] h-[500px] bg-blue-500/10 blur-[120px] rounded-full"
-        />
-        <motion.div
-          animate={{
-            scale: [1, 1.1, 1],
-            x: [0, 50, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-24 left-1/3 w-80 h-80 bg-pink-500/10 blur-[80px] rounded-full"
-        />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-4 space-y-6 relative z-10">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden rounded-[1.5rem] bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 p-6 md:p-12 text-white text-center space-y-8 shadow-2xl border border-white/20">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/10 blur-[100px] rounded-full -mr-48 -mt-48 animate-pulse"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-pink-500/10 blur-[100px] rounded-full -ml-48 -mb-48 animate-pulse"></div>
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-xl border border-white/20 px-5 py-2.5 rounded-full text-[11px] font-black tracking-[0.3em] text-white"
-        >
-          <Logo iconClassName="w-12 h-12" showText={false} dark={true} />
-          <span className="uppercase text-[9px]">CEE MEDIA OFFICIAL</span>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="space-y-6"
-        >
-          <h1 className="flex flex-col items-center justify-center leading-none select-none text-white">
-            <span className="text-7xl md:text-9xl font-black tracking-tighter uppercase drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]">CEE</span>
-            <span className="text-2xl md:text-4xl font-black tracking-[0.8em] uppercase text-white/90 -mt-2 md:-mt-4 ml-4 drop-shadow-lg">MEDIA</span>
-          </h1>
+      
+      <div className="max-w-7xl mx-auto px-4 py-12 space-y-24 relative">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-[3rem] bg-brand-primary p-12 md:p-24 text-white text-center space-y-10 shadow-2xl">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.1),transparent_50%)]"></div>
           
-          <div className="space-y-4">
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-base md:text-2xl text-white max-w-4xl mx-auto font-black tracking-tight uppercase leading-tight drop-shadow-md"
-            >
+          <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2.5 rounded-full text-[10px] font-black tracking-[0.3em] relative z-10">
+            <Logo iconClassName="w-8 h-8" showText={false} dark={true} />
+            <span className="uppercase">CEE MEDIA OFFICIAL</span>
+          </div>
+
+          <div className="space-y-8 relative z-10">
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
+              CEE <span className="text-brand-accent">MEDIA</span>
+            </h1>
+            
+            <p className="text-xl md:text-3xl text-indigo-100 font-medium tracking-tight max-w-3xl mx-auto opacity-90">
               Your Voice, Your Campus, Your Story.
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="text-purple-100/80 text-[11px] md:text-base font-medium max-w-2xl mx-auto"
-            >
-              The heartbeat of campus culture. Stay connected, stay informed, and make your mark.
-            </motion.p>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="flex flex-col sm:flex-row justify-center gap-4 pt-4"
-        >
-          <Link to="/vote" className="group relative bg-white text-purple-600 px-10 py-4 rounded-full font-black shadow-[0_20px_50px_rgba(255,255,255,0.2)] hover:shadow-[0_25px_60px_rgba(255,255,255,0.3)] transition-all active:scale-95 flex items-center justify-center overflow-hidden">
-            <span className="relative z-10 text-sm">START VOTING</span>
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-50 to-white opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </Link>
-          <Link to="/blog" className="bg-white/10 backdrop-blur-xl border border-white/20 text-white px-10 py-4 rounded-full font-black hover:bg-white/20 transition-all active:scale-95 flex items-center justify-center shadow-lg text-sm">
-            EXPLORE BLOG
-          </Link>
-        </motion.div>
-      </section>
-
-      {/* Categories - Horizontal Scroll */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-2">
-          <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Categories</h2>
-          <div className="h-px flex-grow mx-4 bg-slate-200/50"></div>
-        </div>
-        <div className="flex overflow-x-auto gap-3 pb-3 hide-scrollbar px-2">
-          {categories.map((cat, idx) => (
-            <motion.div
-              key={cat.name}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: idx * 0.1 }}
-            >
-              <Link 
-                to={cat.path}
-                className="flex-shrink-0 w-32 h-40 rounded-[1.25rem] bg-white/70 backdrop-blur-xl border border-white/40 card-shadow p-4 flex flex-col items-center justify-center space-y-3 hover:scale-105 hover:bg-white/90 transition-all group"
-              >
-                <div className={`w-10 h-10 ${cat.color} rounded-xl flex items-center justify-center text-white shadow-xl group-hover:rotate-12 transition-transform duration-500`}>
-                  <cat.icon size={20} />
-                </div>
-                <span className="font-black text-slate-700 uppercase tracking-wider text-[9px]">{cat.name}</span>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Preview Cards Grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Trending Poll */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ y: -10 }}
-          className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] card-shadow p-6 space-y-4 border border-white/40 relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-purple-600 bg-purple-100/50 px-2.5 py-1 rounded-full border border-purple-200/50">Trending Poll</span>
-            <TrendingUp size={14} className="text-purple-600" />
-          </div>
-          {trendingPoll?.image && (
-            <div className="w-full h-28 rounded-[1rem] overflow-hidden mb-1 relative z-10 shadow-lg">
-              <img 
-                src={trendingPoll.image} 
-                alt="Poll" 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-            </div>
-          )}
-          <h3 className="text-lg font-black text-slate-800 leading-tight relative z-10">
-            {trendingPoll?.question || "Loading latest poll..."}
-          </h3>
-          <div className="flex items-center justify-between relative z-10 pt-1">
-            <Link to="/vote" className="flex items-center text-[10px] font-black text-purple-600 group/link">
-              VOTE NOW <ChevronRight size={14} className="ml-1 group-hover/link:translate-x-2 transition-transform" />
-            </Link>
-            <div className="relative">
-              <button 
-                onClick={() => setShowShareMenu(showShareMenu === 'poll' ? null : 'poll')}
-                className="p-1.5 text-slate-400 hover:text-purple-600 transition-colors"
-              >
-                <Share2 size={14} />
-              </button>
-              <AnimatePresence>
-                {showShareMenu === 'poll' && trendingPoll && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
-                  >
-                    <div className="p-1.5 space-y-1">
-                      <button onClick={() => { handleShare('vote', trendingPoll.id, trendingPoll.question).copy(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        {copied ? <Check size={12} className="text-green-500" /> : <LinkIcon size={12} />}
-                        <span className="text-[9px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
-                      </button>
-                      <button onClick={() => { handleShare('vote', trendingPoll.id, trendingPoll.question).twitter(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        <XIcon size={12} className="text-black" />
-                        <span className="text-[9px] font-bold">X</span>
-                      </button>
-                      <button onClick={() => { handleShare('vote', trendingPoll.id, trendingPoll.question).whatsapp(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        <WhatsAppIcon size={12} className="text-green-500" />
-                        <span className="text-[9px] font-bold">WhatsApp</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Hot Blog */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ y: -10 }}
-          className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] card-shadow p-6 space-y-4 border border-white/40 relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-blue-600 bg-blue-100/50 px-2.5 py-1 rounded-full border border-blue-200/50">Hot Blog</span>
-            <BookOpen size={14} className="text-blue-600" />
-          </div>
-          {hotPost?.image && (
-            <div className="w-full h-28 rounded-[1rem] overflow-hidden mb-1 relative z-10 shadow-lg">
-              <img 
-                src={hotPost.image} 
-                alt="Post" 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-            </div>
-          )}
-          <h3 className="text-lg font-black text-slate-800 leading-tight relative z-10">
-            {hotPost?.title || "Loading latest gist..."}
-          </h3>
-          <div className="flex items-center justify-between relative z-10 pt-1">
-            <Link to="/blog" className="flex items-center text-[10px] font-black text-blue-600 group/link">
-              READ MORE <ChevronRight size={14} className="ml-1 group-hover/link:translate-x-2 transition-transform" />
-            </Link>
-            <div className="relative">
-              <button 
-                onClick={() => setShowShareMenu(showShareMenu === `post-${hotPost?.id}` ? null : `post-${hotPost?.id}`)}
-                className="p-1.5 bg-slate-100/50 hover:bg-slate-200/50 rounded-xl transition-colors text-slate-600"
-              >
-                <Share2 size={14} />
-              </button>
-              <AnimatePresence>
-                {showShareMenu === `post-${hotPost?.id}` && hotPost && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute bottom-full right-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
-                  >
-                    <div className="p-1.5 space-y-1">
-                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).copy(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        {copied ? <Check size={12} className="text-green-500" /> : <LinkIcon size={12} />}
-                        <span className="text-[9px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
-                      </button>
-                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).twitter(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        <XIcon size={12} className="text-black" />
-                        <span className="text-[9px] font-bold">X</span>
-                      </button>
-                      <button onClick={() => { handleShare('blog', hotPost.id, hotPost.title).whatsapp(); setShowShareMenu(null); }} className="w-full flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700">
-                        <WhatsAppIcon size={12} className="text-green-500" />
-                        <span className="text-[9px] font-bold">WhatsApp</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Latest Confession */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          whileHover={{ y: -10 }}
-          className="bg-white/70 backdrop-blur-xl rounded-[1.25rem] card-shadow p-6 space-y-4 border border-white/40 relative overflow-hidden group"
-        >
-          <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-          <div className="flex items-center justify-between relative z-10">
-            <span className="text-[8px] font-black uppercase tracking-[0.2em] text-orange-600 bg-orange-100/50 px-2.5 py-1 rounded-full border border-orange-200/50">Latest Confession</span>
-            <MessageCircle size={14} className="text-orange-600" />
-          </div>
-          <div className="bg-orange-50/50 rounded-[1rem] p-4 relative z-10 border border-orange-100/50 min-h-[120px] flex flex-col justify-between">
-            <p className="text-slate-700 italic font-medium line-clamp-4 leading-relaxed text-xs">
-              "{latestMessage?.content || "Loading latest confession..."}"
             </p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[8px] font-black text-orange-400 uppercase tracking-widest">Anonymous</span>
-              <div className="flex items-center space-x-1 text-orange-400">
-                <Heart size={8} fill="currentColor" />
-                <span className="text-[8px] font-black">REAL</span>
-              </div>
-            </div>
           </div>
-          <div className="flex items-center justify-between relative z-10 pt-1">
-            <Link to="/confessions" className="flex items-center text-[10px] font-black text-orange-600 group/link">
-              VIEW ALL <ChevronRight size={14} className="ml-1 group-hover/link:translate-x-2 transition-transform" />
+
+          <div className="flex flex-col sm:flex-row justify-center gap-6 pt-8 relative z-10">
+            <Link 
+              to="/vote" 
+              className="bg-brand-accent text-brand-primary px-12 py-5 rounded-2xl font-black shadow-xl hover:bg-brand-focus transition-all text-xs uppercase tracking-[0.2em]"
+            >
+              Start Voting
+            </Link>
+            <Link to="/blog" className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-12 py-5 rounded-2xl font-black hover:bg-white/20 transition-all text-xs uppercase tracking-[0.2em]">
+              Explore Blog
             </Link>
           </div>
-        </motion.div>
-      </section>
+        </section>
 
-      {/* Stats Section */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: 'Active Users', value: `${stats.visitors.toLocaleString()}+`, icon: Users, color: 'from-blue-500 to-indigo-600' },
-          { label: 'Votes Cast', value: `${stats.votes.toLocaleString()}+`, icon: Activity, color: 'from-purple-500 to-pink-600' },
-          { label: 'Confessions', value: `${stats.confessions.toLocaleString()}+`, icon: MessageCircle, color: 'from-orange-400 to-red-500' },
-          { label: 'Campus Gists', value: `${stats.posts.toLocaleString()}+`, icon: Zap, color: 'from-green-400 to-emerald-600' },
-        ].map((stat, idx) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 + (idx * 0.1) }}
-            className="bg-white/70 backdrop-blur-xl p-4 rounded-[1.25rem] card-shadow border border-white/40 flex flex-col items-center text-center space-y-1.5 group hover:scale-105 transition-all"
-          >
-            <div className={`w-10 h-10 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white shadow-lg mb-0.5 group-hover:rotate-12 transition-transform`}>
-              <stat.icon size={18} />
-            </div>
-            <span className="text-xl font-black text-slate-800 tracking-tighter">{stat.value}</span>
-            <span className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em]">{stat.label}</span>
-          </motion.div>
-        ))}
-      </section>
-
-      {/* Feature Grid */}
-      <section className="bg-slate-900/80 backdrop-blur-xl rounded-[1.5rem] p-8 md:p-12 text-white overflow-hidden relative border border-white/10 shadow-2xl">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-purple-500/20 blur-[100px] rounded-full -mr-32 -mt-32"></div>
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/20 blur-[100px] rounded-full -ml-32 -mb-32"></div>
-        
-        <div className="relative z-10 space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-xl md:text-2xl font-black tracking-tight uppercase">Campus Features</h2>
-            <p className="text-slate-400 text-xs md:text-sm font-medium max-w-2xl mx-auto">Everything you need to stay engaged, informed, and connected with your campus community.</p>
+        {/* Categories */}
+        <section className="space-y-10">
+          <div className="flex items-center space-x-6">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Explore Categories</h2>
+            <div className="h-px flex-grow bg-slate-100"></div>
           </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            {[
-              { name: 'Debate', icon: Zap, desc: 'Hot topics', color: 'text-purple-400', path: '/vote' },
-              { name: 'Polls', icon: TrendingUp, desc: 'Cast your vote', color: 'text-blue-400', path: '/vote' },
-              { name: 'Confessions', icon: MessageCircle, desc: 'Share secrets', color: 'text-orange-400', path: '/confessions' },
-              { name: 'Trends', icon: Zap, desc: 'What\'s new', color: 'text-pink-400', path: '/blog' },
-            ].map((feature, idx) => (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+            {categories.map((cat) => (
               <Link 
-                key={feature.name}
-                to={feature.path}
-                className="block"
+                key={cat.name}
+                to={cat.path}
+                className="group bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-brand-secondary transition-all flex flex-col items-center text-center space-y-6"
               >
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + (idx * 0.1) }}
-                  className="bg-white/5 border border-white/10 p-6 rounded-[1.5rem] hover:bg-white/10 transition-all group hover:scale-105 h-full"
-                >
-                  <feature.icon className={`${feature.color} mb-3 group-hover:scale-110 transition-transform`} size={28} />
-                  <h4 className="font-black text-base uppercase tracking-wider mb-1">{feature.name}</h4>
-                  <p className="text-[10px] text-slate-400 font-medium">{feature.desc}</p>
-                </motion.div>
+                <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-secondary group-hover:bg-brand-secondary group-hover:text-white transition-all duration-500">
+                  <cat.icon size={28} />
+                </div>
+                <span className="font-black text-slate-900 uppercase tracking-tighter text-xs">{cat.name}</span>
               </Link>
             ))}
           </div>
+        </section>
+
+        {/* Featured Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {/* Trending Poll */}
+            <Link 
+              to={trendingPoll ? `/vote?id=${trendingPoll.id}` : "/vote"}
+              className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-10 space-y-8 flex flex-col hover:shadow-2xl transition-all group cursor-pointer"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary">Trending Poll</span>
+                <div className="w-8 h-8 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary">
+                  <TrendingUp size={16} />
+                </div>
+              </div>
+              {trendingPoll ? (
+                <>
+                  {trendingPoll.image && (
+                    <div className="aspect-video rounded-3xl overflow-hidden shadow-inner bg-slate-50">
+                      <img src={trendingPoll.image} alt="Poll" className="w-full h-full object-cover transition-transform duration-1000" referrerPolicy="no-referrer" loading="lazy" />
+                    </div>
+                  )}
+                  <h3 className="text-3xl font-black text-slate-900 leading-tight flex-grow tracking-tight">
+                    {trendingPoll.question}
+                  </h3>
+                </>
+              ) : (
+                <div className="space-y-6 flex-grow">
+                  <div className="aspect-video rounded-3xl bg-slate-100 animate-pulse" />
+                  <div className="h-8 bg-slate-100 rounded-xl w-3/4 animate-pulse" />
+                  <div className="h-8 bg-slate-100 rounded-xl w-1/2 animate-pulse" />
+                </div>
+              )}
+              <div className="inline-flex items-center text-[10px] font-black text-brand-secondary group-hover:text-brand-primary transition-colors uppercase tracking-[0.2em]">
+                VOTE NOW <ChevronRight size={16} className="ml-1" />
+              </div>
+            </Link>
+
+          {/* Hot Blog */}
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-10 space-y-8 flex flex-col hover:shadow-2xl transition-all group">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-brand-secondary">Hot Blog</span>
+              <div className="w-8 h-8 rounded-full bg-brand-secondary/10 flex items-center justify-center text-brand-secondary">
+                <BookOpen size={16} />
+              </div>
+            </div>
+            {hotPost ? (
+              <>
+                {hotPost.image && (
+                  <div className="aspect-video rounded-3xl overflow-hidden shadow-inner bg-slate-50">
+                    <img src={hotPost.image} alt="Post" className="w-full h-full object-cover transition-transform duration-1000" referrerPolicy="no-referrer" loading="lazy" />
+                  </div>
+                )}
+                <h3 className="text-3xl font-black text-slate-900 leading-tight flex-grow tracking-tight">
+                  {hotPost.title}
+                </h3>
+              </>
+            ) : (
+              <div className="space-y-6 flex-grow">
+                <div className="aspect-video rounded-3xl bg-slate-100 animate-pulse" />
+                <div className="h-8 bg-slate-100 rounded-xl w-3/4 animate-pulse" />
+                <div className="h-8 bg-slate-100 rounded-xl w-1/2 animate-pulse" />
+              </div>
+            )}
+            <Link to="/blog" className="inline-flex items-center text-[10px] font-black text-brand-secondary hover:text-brand-primary transition-colors uppercase tracking-[0.2em]">
+              READ MORE <ChevronRight size={16} className="ml-1" />
+            </Link>
+          </div>
+
+          {/* Latest Confession */}
+          <div className="bg-brand-primary rounded-[3rem] shadow-2xl p-10 space-y-8 flex flex-col text-white relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl"></div>
+            <div className="flex items-center justify-between relative z-10">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-300">Latest Confession</span>
+              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-indigo-300">
+                <MessageCircle size={16} />
+              </div>
+            </div>
+            <div className="flex-grow flex flex-col justify-center relative z-10">
+              {latestMessage ? (
+                <p className="text-2xl font-medium italic leading-relaxed text-indigo-50 transition-transform duration-500">
+                  "{latestMessage.content}"
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="h-6 bg-white/10 rounded-lg w-full animate-pulse" />
+                  <div className="h-6 bg-white/10 rounded-lg w-5/6 animate-pulse" />
+                  <div className="h-6 bg-white/10 rounded-lg w-2/3 animate-pulse" />
+                </div>
+              )}
+            </div>
+            <div className="pt-8 border-t border-white/10 flex items-center justify-between relative z-10">
+              <div className="flex items-center space-x-2">
+                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-indigo-300">
+                  <User size={12} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Anonymous</span>
+              </div>
+              <Link to="/confessions" className="text-[10px] font-black text-brand-accent hover:text-brand-focus transition-colors uppercase tracking-[0.2em]">
+                VIEW ALL
+              </Link>
+            </div>
+          </div>
         </div>
-      </section>
+
+        {/* Stats */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          {[
+            { label: 'Active Users', value: stats.visitors, icon: Users },
+            { label: 'Votes Cast', value: stats.votes, icon: Activity },
+            { label: 'Confessions', value: stats.confessions, icon: MessageCircle },
+            { label: 'Campus Gists', value: stats.posts, icon: Zap },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm text-center space-y-3 group hover:border-brand-secondary hover:shadow-xl transition-all">
+              <div className="text-4xl font-black text-slate-900 tracking-tighter transition-transform">
+                {stat.value.toLocaleString()}+
+              </div>
+              <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{stat.label}</div>
+            </div>
+          ))}
+        </section>
+
+        {/* Footer CTA */}
+        <section className="bg-slate-900 rounded-[3rem] p-16 md:p-24 text-center space-y-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15),transparent_70%)]"></div>
+          <div className="relative z-10 space-y-4">
+            <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Join the Conversation</h2>
+            <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-medium tracking-tight">The heartbeat of campus culture. Stay connected, stay informed, and make your mark.</p>
+          </div>
+          <div className="flex justify-center pt-4 relative z-10">
+            <Link to="/confessions/submit" className="bg-brand-secondary text-white px-12 py-5 rounded-2xl font-black hover:bg-indigo-500 transition-all shadow-xl text-xs uppercase tracking-[0.2em]">
+              Share a Secret
+            </Link>
+          </div>
+        </section>
+      </div>
     </div>
-  </div>
-);
+  );
 };
 
 export default HomePage;

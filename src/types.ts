@@ -45,7 +45,9 @@ export interface Post {
   image: string;
   likes: number;
   category?: string;
+  url?: string;
   created_at: string;
+  comments_count?: number;
 }
 
 export interface Message {
@@ -54,6 +56,8 @@ export interface Message {
   approved: boolean;
   created_at: string;
   likes: number;
+  comments_count?: number;
+  url?: string;
 }
 
 export interface MessageComment {
@@ -79,6 +83,7 @@ export interface TeamMember {
   image: string;
   likes?: number;
   bio?: string;
+  url?: string;
   created_at: string;
 }
 

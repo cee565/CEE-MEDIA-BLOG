@@ -6,16 +6,16 @@ import { CheckCircle2, BarChart3, Share2, Link, Check, Heart, Clock, ArrowLeft, 
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { toast } from 'sonner';
 import { AnimatePresence } from 'motion/react';
-import { isAfter, intervalToDuration } from 'date-fns';
+import { isAfter, intervalToDuration, format } from 'date-fns';
 import { useSearchParams } from 'react-router-dom';
 import MetaTags from '../components/MetaTags';
 
 const TimerBox = ({ value, label, size = 'md' }: { value: number | string, label: string, size?: 'sm' | 'md' }) => (
   <div className="flex flex-col items-center">
-    <div className={`${size === 'sm' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-12 h-12 md:w-16 md:h-16'} bg-[#E11D48] rounded-lg md:rounded-xl flex items-center justify-center shadow-[0_10px_25px_-5px_rgba(225,29,72,0.4)] border border-white/20`}>
+    <div className={`${size === 'sm' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-12 h-12 md:w-16 md:h-16'} bg-brand-primary rounded-lg md:rounded-xl flex items-center justify-center shadow-lg border border-white/10`}>
       <span className={`text-white ${size === 'sm' ? 'text-xs md:text-sm' : 'text-xl md:text-2xl'} font-black tracking-tighter`}>{String(value).padStart(2, '0')}</span>
     </div>
-    <span className={`${size === 'sm' ? 'text-[6px] md:text-[8px]' : 'text-[8px] md:text-[10px]'} font-black text-slate-500 mt-1 md:mt-2 uppercase tracking-[0.2em]`}>{label}</span>
+    <span className={`${size === 'sm' ? 'text-[6px] md:text-[8px]' : 'text-[8px] md:text-[10px]'} font-black text-slate-400 mt-1 md:mt-2 uppercase tracking-[0.2em]`}>{label}</span>
   </div>
 );
 
@@ -50,13 +50,13 @@ const GroupTimer = ({ expiresAt }: { expiresAt: string }) => {
   if (!timeLeft) return null;
 
   return (
-    <div className="flex items-center space-x-1 md:space-x-2 bg-white/60 backdrop-blur-md p-2 rounded-xl border border-white/40 shadow-sm">
+    <div className="flex items-center space-x-1 md:space-x-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
       <TimerBox value={timeLeft.days} label="D" size="sm" />
-      <span className="text-xs font-black text-slate-300 mb-4">:</span>
+      <span className="text-xs font-black text-slate-200 mb-4">:</span>
       <TimerBox value={timeLeft.hours} label="H" size="sm" />
-      <span className="text-xs font-black text-slate-300 mb-4">:</span>
+      <span className="text-xs font-black text-slate-200 mb-4">:</span>
       <TimerBox value={timeLeft.minutes} label="M" size="sm" />
-      <span className="text-xs font-black text-slate-300 mb-4">:</span>
+      <span className="text-xs font-black text-slate-200 mb-4">:</span>
       <TimerBox value={timeLeft.seconds} label="S" size="sm" />
     </div>
   );
@@ -230,153 +230,84 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
   return (
     <motion.div 
       id={`poll-${poll.id}`}
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="bg-white/40 backdrop-blur-2xl rounded-[1.5rem] card-shadow p-4 md:p-8 space-y-6 border border-white/60 overflow-hidden group/card relative"
+      className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-10 space-y-8 overflow-hidden relative group"
     >
-      {/* Dynamic background glow */}
-      <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] -z-10 group-hover/card:bg-purple-500/20 transition-all duration-1000" />
-      <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] -z-10 group-hover/card:bg-blue-500/20 transition-all duration-1000" />
-
-      <div className="space-y-4">
+      <div className="space-y-6">
         {poll.image && (
-          <div className="w-full h-40 md:h-64 rounded-[1rem] overflow-hidden mb-4 relative group/img shadow-2xl">
+          <div className="aspect-video rounded-2xl overflow-hidden shadow-inner">
             <img 
               src={poll.image} 
               alt="Poll" 
-              className="w-full h-full object-cover transform group-hover/img:scale-105 transition-transform duration-[2000ms] ease-out"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-80 group-hover/img:opacity-60 transition-opacity duration-700" />
-            
-            {/* Floating stats on image */}
-            <div className="absolute bottom-4 left-4 flex items-center space-x-2.5">
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="px-3 py-1.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl"
-              >
-                {poll.total_votes.toLocaleString()} Votes
-              </motion.div>
-              {isEnded && (
-                <motion.div 
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="px-3 py-1.5 bg-red-500/20 backdrop-blur-xl border border-red-500/30 rounded-lg text-red-100 text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl"
-                >
-                  Final Results
-                </motion.div>
-              )}
-            </div>
           </div>
         )}
         
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-          <div className="space-y-3 flex-1">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2.5">
-                {!isEnded && (
-                  <div className="flex items-center space-x-1 px-2 py-0.5 bg-green-500/10 text-green-600 rounded-full border border-green-500/20">
-                    <div className="w-1 h-1 bg-green-600 rounded-full animate-ping" />
-                    <span className="text-[7px] font-black uppercase tracking-widest">Live</span>
+        <div className="space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-2 flex-1">
+              <div className="flex items-center space-x-3">
+                {isEnded ? (
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-red-50 text-red-600 rounded-full border border-red-100">
+                    <span className="text-[8px] font-black uppercase tracking-widest">Ended</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-green-50 text-green-600 rounded-full border border-green-100">
+                    <div className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse" />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Live</span>
                   </div>
                 )}
-                <div className="w-1 h-6 bg-gradient-to-b from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-200" />
-                <h3 className="text-xl md:text-2xl font-black text-slate-900 leading-[1.1] tracking-tight drop-shadow-sm">
+                <h3 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight tracking-tight">
                   {poll.question}
                 </h3>
               </div>
-              
               {poll.description && (
-                <p className="text-slate-500 text-sm md:text-base leading-relaxed max-w-3xl font-medium opacity-80">
+                <p className="text-slate-500 text-sm md:text-base leading-relaxed font-medium">
                   {poll.description}
                 </p>
               )}
             </div>
-            
-            <div className="flex flex-wrap items-center gap-2.5 pt-0.5">
-              {timeLeft && !isEnded && (
-                <div className="w-full py-6 flex items-center justify-center space-x-2 md:space-x-4 bg-slate-50/50 backdrop-blur-xl rounded-3xl border border-white shadow-inner">
-                  <TimerBox value={timeLeft.days} label="Days" />
-                  <span className="text-xl font-black text-slate-300 mt-[-20px]">:</span>
-                  <TimerBox value={timeLeft.hours} label="Hour" />
-                  <span className="text-xl font-black text-slate-300 mt-[-20px]">:</span>
-                  <TimerBox value={timeLeft.minutes} label="Min" />
-                  <span className="text-xl font-black text-slate-300 mt-[-20px]">:</span>
-                  <TimerBox value={timeLeft.seconds} label="Sec" />
-                </div>
-              )}
-              {isEnded && (
-                <div className="flex items-center space-x-1.5 bg-red-50/50 backdrop-blur-md text-red-600 px-3 py-1.5 rounded-lg border border-red-100 shadow-sm">
-                  <Clock size={14} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em]">Poll Closed</span>
-                </div>
-              )}
-              <div className="flex items-center space-x-1.5 bg-white/50 backdrop-blur-md text-slate-500 px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm">
-                <BarChart3 size={14} />
-                <span className="text-[9px] font-black uppercase tracking-[0.15em]">{poll.total_votes.toLocaleString()} Total Votes</span>
-              </div>
+
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={handleLike}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all ${liked ? 'text-red-500 bg-red-50' : 'text-slate-400 hover:text-red-500 hover:bg-red-50'}`}
+              >
+                <Heart size={18} fill={liked ? 'currentColor' : 'none'} />
+                <span className="text-sm font-black">{localLikes.toLocaleString()}</span>
+              </button>
+              <button 
+                onClick={() => copyToClipboard()}
+                className={`p-2.5 rounded-xl transition-all ${copied ? 'bg-green-50 text-green-600' : 'text-slate-400 hover:text-brand-secondary hover:bg-slate-50'}`}
+              >
+                {copied ? <Check size={18} /> : <Link size={18} />}
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center space-x-1.5 self-end lg:self-start bg-white/40 backdrop-blur-md p-1.5 rounded-[1rem] border border-white/60 shadow-sm">
-            <button 
-              onClick={handleLike}
-              className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg transition-all duration-500 ${liked ? 'text-red-500 bg-white shadow-md scale-105' : 'text-slate-400 hover:text-red-500 hover:bg-white/80'}`}
-            >
-              <Heart size={16} fill={liked ? 'currentColor' : 'none'} className={liked ? 'animate-bounce' : 'group-hover:scale-110 transition-transform'} />
-              <span className="text-xs font-black">{localLikes.toLocaleString()}</span>
-            </button>
-            <div className="w-px h-5 bg-slate-200/50" />
-            <button 
-              onClick={() => copyToClipboard()}
-              className={`p-2 rounded-lg transition-all duration-500 ${copied ? 'bg-green-50 text-green-600 shadow-md scale-105' : 'text-slate-400 hover:text-green-500 hover:bg-white/80'}`}
-              title="Copy Poll Link"
-            >
-              {copied ? <Check size={16} /> : <Link size={16} />}
-            </button>
-            <div className="w-px h-5 bg-slate-200/50" />
-            <div className="relative">
-              <button 
-                onClick={() => setShowShareMenu(!showShareMenu)}
-                className={`p-2 rounded-lg transition-all duration-500 ${showShareMenu ? 'bg-white text-purple-600 shadow-md scale-105' : 'text-slate-400 hover:text-purple-500 hover:bg-white/80'}`}
-              >
-                <Share2 size={16} />
-              </button>
-            <AnimatePresence>
-              {showShareMenu && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowShareMenu(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 15, scale: 0.9, filter: 'blur(10px)' }}
-                    animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                    exit={{ opacity: 0, y: 15, scale: 0.9, filter: 'blur(10px)' }}
-                    className="absolute bottom-full right-0 mb-4 w-56 bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/60 overflow-hidden z-50 p-2"
-                  >
-                    <div className="space-y-1">
-                      <button onClick={() => { copyToClipboard(); setShowShareMenu(false); }} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-purple-50 rounded-xl transition-all group/item">
-                        {copied ? <Check size={18} className="text-green-500" /> : <Link size={18} className="text-slate-400 group-hover/item:text-purple-500 transition-colors" />}
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{copied ? 'Copied!' : 'Copy Link'}</span>
-                      </button>
-                      <button onClick={() => { shareToTwitter(); setShowShareMenu(false); }} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item">
-                        <XIcon size={18} className="text-black group-hover/item:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">X</span>
-                      </button>
-                      <button onClick={() => { shareToWhatsApp(); setShowShareMenu(false); }} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-green-50 rounded-xl transition-all group/item">
-                        <WhatsAppIcon size={18} className="text-green-500 group-hover/item:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">WhatsApp</span>
-                      </button>
-                      <button onClick={() => { copyToClipboard(); setShowShareMenu(false); }} className="w-full flex items-center space-x-3 px-4 py-3 hover:bg-slate-50 rounded-xl transition-all group/item">
-                        <TikTokIcon size={18} className="text-black group-hover/item:scale-110 transition-transform" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">TikTok</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {timeLeft && !isEnded && (
+              <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+                <Clock size={14} className="text-slate-400" />
+                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                  Ends in: {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m
+                </span>
+              </div>
+            )}
+            <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+              <Clock size={14} className="text-slate-400" />
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                {format(new Date(poll.created_at), 'MMM d, yyyy HH:mm:ss')}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+              <BarChart3 size={14} className="text-slate-400" />
+              <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                {poll.total_votes.toLocaleString()} Total Votes
+              </span>
             </div>
           </div>
         </div>
@@ -385,97 +316,64 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
       <div className="grid grid-cols-1 gap-4">
         {poll.options.map((option, index) => {
           const optionText = typeof option === 'string' ? option : option.text;
-          const optionImage = typeof option === 'string' ? null : option.image;
           const voteCount = poll.votes[index] || 0;
           const isSelected = selected === index;
           const isPending = tempSelected === index;
+          const percentage = poll.total_votes > 0 ? Math.round((voteCount / poll.total_votes) * 100) : 0;
 
           return (
             <button
               key={index}
               disabled={showResults || isSubmitting}
               onClick={() => setTempSelected(index)}
-              className={`w-full relative overflow-hidden rounded-2xl p-4 md:p-6 text-left transition-all duration-500 group/opt border-2 ${
+              className={`w-full relative overflow-hidden rounded-2xl p-5 text-left transition-all duration-300 border-2 ${
                 showResults 
-                  ? 'cursor-default border-transparent bg-slate-50/50' 
-                  : 'hover:shadow-[0_20px_40px_rgba(124,58,237,0.15)] border-white/60 hover:border-purple-400 active:scale-[0.99] bg-white/40 backdrop-blur-md'
-              } ${
-                isSelected 
-                  ? 'border-purple-500 bg-white shadow-2xl scale-[1.02] ring-4 ring-purple-100' 
+                  ? 'cursor-default border-transparent bg-slate-50' 
                   : isPending 
-                    ? 'border-purple-400 bg-white ring-8 ring-purple-100/50 shadow-2xl scale-[1.02]' 
-                    : ''
+                    ? 'border-brand-secondary bg-brand-secondary/5 shadow-md scale-[1.02] z-10' 
+                    : 'border-slate-100 bg-white hover:border-brand-secondary hover:bg-slate-50 hover:scale-[1.01] hover:shadow-sm'
               }`}
             >
-              <div className="relative flex justify-between items-center z-10">
+              {/* Progress bar removed as per request to remove percentage from voting */}
+              
+              <div className="flex items-center justify-between relative z-10">
                 <div className="flex items-center space-x-4">
-                  {!showResults && (
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
-                      isPending ? 'border-purple-500 bg-purple-500 scale-125 shadow-lg shadow-purple-200' : 'border-slate-300 group-hover/opt:border-purple-400 group-hover/opt:scale-110'
-                    }`}>
-                      {isPending && <Check size={14} className="text-white" strokeWidth={3} />}
-                    </div>
-                  )}
-                  {optionImage && (
-                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden border-2 border-white flex-shrink-0 shadow-2xl group-hover/opt:scale-110 transition-transform duration-700">
-                      <img src={optionImage} alt={optionText} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                    </div>
-                  )}
-                  <div className="flex flex-col space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-lg md:text-xl font-black tracking-tight leading-tight ${isSelected || isPending ? 'text-purple-900' : 'text-slate-900'}`}>
-                        {optionText}
-                      </span>
-                    </div>
-                    {showResults && (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-black text-slate-600 uppercase tracking-[0.1em]">
-                          {voteCount.toLocaleString()} {voteCount === 1 ? 'Vote' : 'Votes'}
-                        </span>
-                        {isSelected && (
-                          <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full text-[8px] font-black uppercase tracking-widest">Your Choice</span>
-                        )}
-                      </div>
-                    )}
+                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                    isSelected || isPending ? 'border-brand-secondary bg-brand-secondary' : 'border-slate-200'
+                  }`}>
+                    {(isSelected || isPending) && <Check size={14} className="text-white" strokeWidth={4} />}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-base font-black uppercase tracking-tight transition-colors ${isSelected ? 'text-brand-primary' : isPending ? 'text-brand-secondary' : 'text-slate-700'}`}>
+                      {optionText}
+                    </span>
                   </div>
                 </div>
-                {showResults && isSelected && (
-                  <motion.div
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    className="bg-purple-600 p-2 rounded-full shadow-xl shadow-purple-200"
-                  >
-                    <CheckCircle2 size={20} className="text-white" />
-                  </motion.div>
+                {showResults && (
+                  <div className="flex flex-col items-end">
+                    <span className="text-xl font-black text-slate-900 tracking-tighter">{voteCount.toLocaleString()}</span>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Votes</span>
+                  </div>
                 )}
               </div>
             </button>
           );
         })}
-
-        {!showResults && tempSelected !== null && (
-          <motion.button
-            initial={{ opacity: 0, y: 20, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            whileHover={{ scale: 1.02, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleVote}
-            disabled={isSubmitting}
-            className="w-full py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 text-white rounded-2xl font-black text-lg shadow-[0_20px_50px_rgba(124,58,237,0.3)] hover:shadow-[0_25px_60px_rgba(124,58,237,0.5)] transition-all disabled:opacity-50 flex items-center justify-center space-x-3 mt-6 group/btn border-t border-white/20"
-          >
-            {isSubmitting ? (
-              <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <span className="tracking-tight">CONFIRM MY VOTE</span>
-                <div className="bg-white/20 p-1 rounded-lg group-hover:bg-white/30 transition-colors">
-                  <CheckCircle2 size={20} className="group-hover:rotate-12 transition-transform" />
-                </div>
-              </>
-            )}
-          </motion.button>
-        )}
       </div>
+
+      {!showResults && (
+        <button
+          disabled={tempSelected === null || isSubmitting}
+          onClick={() => tempSelected !== null && handleVote()}
+          className={`w-full py-5 rounded-2xl font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all shadow-xl ${
+            tempSelected === null || isSubmitting
+              ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+              : 'bg-brand-primary text-white hover:bg-brand-secondary active:scale-95'
+          }`}
+        >
+          {isSubmitting ? 'Casting Vote...' : 'Submit Vote'}
+        </button>
+      )}
     </motion.div>
   );
 });
@@ -495,12 +393,12 @@ const VotePage = () => {
     const fetchData = async () => {
       const { data: pollsData } = await supabase
         .from('polls')
-        .select('*')
+        .select('id, question, description, image, options, votes, total_votes, likes, expires_at, is_ended, group_id, created_at')
         .order('created_at', { ascending: false });
       
       const { data: groupsData } = await supabase
         .from('poll_groups')
-        .select('*')
+        .select('id, title, description, image, expires_at, created_at')
         .order('created_at', { ascending: false });
 
       if (pollsData) setPolls(pollsData as Poll[]);
@@ -560,114 +458,103 @@ const VotePage = () => {
     : polls.filter(p => !p.group_id);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8 relative">
+    <div className="max-w-6xl mx-auto px-4 py-12 space-y-12 relative">
       <MetaTags 
         title={sharedPoll ? sharedPoll.question : 'Campus Voting'}
         description={sharedPoll ? `Vote now on CEE MEDIA: ${sharedPoll.question}` : 'Shape the future of your campus. Vote on trending topics in real-time.'}
         image={sharedPoll?.image || undefined}
       />
-      {/* Immersive Background Elements */}
-      <div className="fixed top-0 left-0 w-full h-full -z-20 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-400/10 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-400/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-[30%] right-[10%] w-[20%] h-[20%] bg-pink-400/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '4s' }} />
-      </div>
 
-      <div className="text-center space-y-4 relative">
+      <div className="text-center space-y-6 relative">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="inline-flex items-center space-x-1.5 px-4 py-1.5 bg-white/40 backdrop-blur-xl border border-white/60 rounded-full shadow-lg"
+          className="inline-flex items-center space-x-2 px-4 py-1.5 bg-white border border-slate-100 rounded-full shadow-sm"
         >
-          <div className="w-1.5 h-1.5 bg-purple-600 rounded-full animate-ping" />
-          <span className="text-[8px] font-black uppercase tracking-[0.3em] text-purple-700">Live Campus Pulse</span>
+          <div className="w-2 h-2 bg-brand-secondary rounded-full animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-primary">Live Campus Pulse</span>
         </motion.div>
         
-        <div className="space-y-2">
+        <div className="space-y-4">
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none"
+            className="text-4xl md:text-6xl font-black text-slate-900 tracking-tighter leading-none uppercase"
           >
-            SHAPE THE <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600">FUTURE.</span>
+            SHAPE THE <span className="text-brand-secondary">FUTURE.</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 1 }}
-            className="text-slate-500 text-xs md:text-base max-w-2xl mx-auto leading-relaxed font-medium opacity-80"
+            transition={{ delay: 0.2 }}
+            className="text-slate-500 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed font-medium"
           >
-            Your voice is the heartbeat of our campus. Cast your vote, spark change, and see the impact in real-time.
+            Your voice matters. Participate in trending polls and see what the campus is thinking.
           </motion.p>
         </div>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-4">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-purple-100 rounded-full"></div>
-            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white p-8 rounded-[2rem] border border-slate-100 h-64 animate-pulse space-y-4">
+                <div className="w-12 h-12 bg-slate-100 rounded-2xl" />
+                <div className="h-8 bg-slate-100 rounded-xl w-3/4" />
+                <div className="h-4 bg-slate-100 rounded-lg w-full" />
+                <div className="h-4 bg-slate-100 rounded-lg w-5/6" />
+              </div>
+            ))}
           </div>
-          <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[9px] animate-pulse">Synchronizing Data...</p>
+          <div className="grid grid-cols-1 gap-8">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-white p-10 rounded-[2rem] border border-slate-100 h-96 animate-pulse space-y-6">
+                <div className="aspect-video rounded-2xl bg-slate-100" />
+                <div className="h-10 bg-slate-100 rounded-xl w-1/2" />
+                <div className="space-y-2">
+                  <div className="h-12 bg-slate-100 rounded-2xl w-full" />
+                  <div className="h-12 bg-slate-100 rounded-2xl w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="space-y-16">
           {selectedGroup ? (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="space-y-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-8"
             >
-              <button 
-                onClick={() => setSelectedGroup(null)}
-                className="group flex items-center space-x-1.5 text-slate-500 font-black uppercase tracking-widest text-[9px] hover:text-purple-600 transition-all bg-white/50 backdrop-blur-md px-5 py-2.5 rounded-xl border border-white/60 shadow-sm hover:shadow-xl hover:-translate-y-1"
-              >
-                <ArrowLeft size={14} className="group-hover:-translate-x-2 transition-transform" /> 
-                <span>Back to Categories</span>
-              </button>
-              
-              <div className="bg-white/40 backdrop-blur-3xl rounded-[1.25rem] card-shadow p-5 md:p-8 border border-white/60 relative overflow-hidden group/hero">
-                {selectedGroup.image && (
-                  <div className="absolute inset-0 opacity-10 group-hover/hero:opacity-20 transition-all duration-1000 scale-110 group-hover/hero:scale-100">
-                    <img src={selectedGroup.image} alt="" className="w-full h-full object-cover blur-sm" loading="lazy" />
-                  </div>
-                )}
-                <div className="relative z-10 space-y-4">
-                  <div className="space-y-3">
-                    <div className="inline-block px-3 py-1 bg-purple-600 text-white rounded-lg text-[8px] font-black uppercase tracking-[0.3em] shadow-xl shadow-purple-200">
-                      Active Category
-                    </div>
-                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter leading-none">{selectedGroup.title}</h2>
-                    <div className="h-1 w-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full shadow-lg shadow-purple-100" />
-                  </div>
-                  {selectedGroup.description && (
-                    <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-4xl font-medium opacity-90">{selectedGroup.description}</p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center space-x-1.5 bg-white/80 px-5 py-2.5 rounded-[1rem] shadow-sm border border-white">
-                      <BarChart3 size={16} className="text-purple-600" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{filteredPolls.length} Active Polls</span>
-                    </div>
-                    {selectedGroup.expires_at && (
-                      <div className="flex items-center space-x-1.5 bg-white/80 px-5 py-2.5 rounded-[1rem] shadow-sm border border-white">
-                        <Clock size={16} className="text-blue-600" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">Ends {new Date(selectedGroup.expires_at).toLocaleDateString()}</span>
-                      </div>
-                    )}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setSelectedGroup(null)}
+                    className="group flex items-center space-x-2 text-slate-400 hover:text-brand-secondary transition-all"
+                  >
+                    <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
+                    <span className="text-[10px] font-black uppercase tracking-widest">Back to Categories</span>
+                  </button>
+                  <div className="space-y-2">
+                    <h2 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter leading-none uppercase">{selectedGroup.title}</h2>
+                    <p className="text-slate-500 text-sm md:text-base font-medium max-w-2xl">{selectedGroup.description}</p>
                   </div>
                 </div>
+                {selectedGroup.expires_at && (
+                  <div className="bg-slate-50 px-6 py-4 rounded-2xl border border-slate-100">
+                    <GroupTimer expiresAt={selectedGroup.expires_at} />
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 gap-6">
+              <div className="grid grid-cols-1 gap-8">
                 {filteredPolls.map((poll, index) => (
                   <motion.div
                     key={poll.id}
-                    initial={{ opacity: 0, y: 30 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.15, duration: 0.6 }}
+                    transition={{ delay: index * 0.1 }}
                   >
                     <PollCard poll={poll} />
                   </motion.div>
@@ -677,54 +564,39 @@ const VotePage = () => {
           ) : (
             <div className="space-y-12">
               {pollGroups.length > 0 && (
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between px-4">
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center tracking-tighter">
-                      <BarChart3 className="mr-2.5 text-purple-600" size={20} /> 
-                      FEATURED CATEGORIES
-                    </h2>
+                <div className="space-y-8">
+                  <div className="flex items-center space-x-3 px-4">
+                    <div className="w-1.5 h-8 bg-brand-secondary rounded-full" />
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Featured Categories</h2>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {pollGroups.map((group, index) => (
                       <motion.button
                         key={group.id}
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1, duration: 0.6 }}
-                        whileHover={{ y: -8, scale: 1.02 }}
+                        transition={{ delay: index * 0.1 }}
                         onClick={() => setSelectedGroup(group)}
-                        className="bg-white/40 backdrop-blur-2xl p-4 md:p-6 rounded-[1.25rem] card-shadow border border-white/60 text-left group relative overflow-hidden h-64 flex flex-col transition-all duration-500"
+                        className="bg-white p-8 rounded-[2rem] border border-slate-100 text-left group relative overflow-hidden flex flex-col transition-all hover:border-brand-secondary hover:shadow-xl"
                       >
-                        {group.image && (
-                          <div className="absolute inset-0 opacity-20 group-hover:opacity-40 transition-all duration-1000 scale-110 group-hover:scale-100">
-                            <img src={group.image} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        <div className="relative z-10 space-y-4 flex-1">
+                          <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-secondary group-hover:bg-brand-secondary group-hover:text-white transition-all">
+                            <BarChart3 size={24} />
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/40 pointer-events-none" />
-                        
-                        <div className="relative z-10 space-y-3 flex-1">
-                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-purple-600 mb-3 shadow-xl group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 group-hover:rotate-6">
-                            <BarChart3 size={20} />
+                          <div className="space-y-2">
+                            <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">{group.title}</h3>
+                            <p className="text-slate-500 text-sm line-clamp-2 font-medium">{group.description}</p>
                           </div>
-                          <h3 className="text-lg md:text-xl font-black text-slate-900 group-hover:text-purple-700 transition-colors tracking-tighter leading-none">
-                            {group.title}
-                          </h3>
-                          <p className="text-slate-600 text-xs md:text-sm line-clamp-3 leading-relaxed font-medium opacity-80">
-                            {group.description}
-                          </p>
                         </div>
                         
-                        <div className="relative z-10 flex items-center justify-between pt-4 mt-auto">
-                          <div className="flex flex-col space-y-2">
-                            <div className="flex items-center space-x-1.5 bg-white/80 px-3 py-1.5 rounded-lg shadow-sm border border-white/60 w-fit">
-                              <span className={`w-1.5 h-1.5 rounded-full ${group.expires_at && isAfter(new Date(), new Date(group.expires_at)) ? 'bg-slate-400' : 'bg-green-500 animate-pulse'}`} />
-                              <span className="text-[8px] font-black text-slate-700 uppercase tracking-[0.2em]">
-                                {polls.filter(p => p.group_id === group.id).length} Active Polls
-                              </span>
-                            </div>
-                            {group.expires_at && <GroupTimer expiresAt={group.expires_at} />}
+                        <div className="relative z-10 flex items-center justify-between pt-6 mt-6 border-t border-slate-50">
+                          <div className="flex items-center space-x-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                              {polls.filter(p => p.group_id === group.id).length} Active Polls
+                            </span>
                           </div>
-                          <div className="flex items-center space-x-1 text-purple-600 font-black text-[8px] uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform duration-500 self-end mb-2">
+                          <div className="flex items-center space-x-1 text-brand-secondary font-black text-[10px] uppercase tracking-widest group-hover:translate-x-2 transition-transform">
                             <span>Explore</span>
                             <ChevronRight size={14} />
                           </div>
@@ -735,30 +607,27 @@ const VotePage = () => {
                 </div>
               )}
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between px-4">
-                  <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center tracking-tighter">
-                    <Clock className="mr-2.5 text-purple-600" size={20} /> 
-                    TRENDING NOW
-                  </h2>
+              <div className="space-y-8">
+                <div className="flex items-center space-x-3 px-4">
+                  <div className="w-1.5 h-8 bg-brand-secondary rounded-full" />
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">Trending Now</h2>
                 </div>
-                <div className="grid grid-cols-1 gap-6">
+                <div className="grid grid-cols-1 gap-8">
                   {filteredPolls.length > 0 ? (
                     filteredPolls.map((poll, index) => (
                       <motion.div
                         key={poll.id}
-                        initial={{ opacity: 0, y: 40 }}
+                        initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.2, duration: 0.8 }}
+                        transition={{ delay: index * 0.1 }}
                       >
                         <PollCard poll={poll} />
                       </motion.div>
                     ))
                   ) : (
-                    <div className="text-center py-16 bg-white/30 backdrop-blur-xl rounded-[1.25rem] border-4 border-dashed border-white/60 shadow-inner">
-                      <BarChart3 size={48} className="mx-auto text-slate-200 mb-4 opacity-50" />
-                      <p className="text-slate-400 text-lg font-black uppercase tracking-[0.3em]">Quiet on the front...</p>
-                      <p className="text-slate-400 mt-1.5 font-medium text-xs">No trending polls at the moment. Check back soon!</p>
+                    <div className="text-center py-24 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+                      <BarChart3 size={48} className="mx-auto text-slate-200 mb-4" />
+                      <p className="text-slate-400 text-sm font-black uppercase tracking-widest">No trending polls at the moment.</p>
                     </div>
                   )}
                 </div>
