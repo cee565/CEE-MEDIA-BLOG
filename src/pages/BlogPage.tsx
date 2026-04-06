@@ -133,7 +133,7 @@ const BlogCard = React.memo(({ post, fullView = false }: { post: Post, fullView?
     }
   };
 
-  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/blog?id=${post.id}`;
+  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/api/post/${post.id}`;
   const shareText = `Check out this blog post on CEE MEDIA: "${post.title}"`;
 
   const copyToClipboard = () => {

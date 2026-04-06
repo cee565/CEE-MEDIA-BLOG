@@ -19,6 +19,11 @@
       "handle": "filesystem"
     },
     {
+      "src": "/api/(.*)",
+      "dest": "/api/$1",
+      "check": true
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }

@@ -98,7 +98,7 @@ export interface Ad {
   name: string;
   media_url: string;
   media_type: 'image' | 'video';
-  link_url: string;
+  link_url?: string;
   description?: string;
   is_active: boolean;
   created_at: string;

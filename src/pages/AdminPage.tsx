@@ -663,8 +663,8 @@ const AdminDashboard = () => {
 
   const handleCreateAd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAd.name || !newAd.link_url) {
-      showNotification("Ad Name and Destination Link are required", "error");
+    if (!newAd.name) {
+      showNotification("Ad Name is required", "error");
       return;
     }
 
@@ -2494,7 +2494,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <label className="text-[9px] font-bold text-slate-400 uppercase ml-2">Destination Link</label>
                 <input
                   type="text"
-                  placeholder="https://yourlink.com"
+                  placeholder="https://yourlink.com (Optional)"
                   value={newAd.link_url || ''}
                   onChange={(e) => setNewAd({ ...newAd, link_url: e.target.value })}
                   className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
@@ -2674,13 +2674,8 @@ const AdminPage = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD;
-    
-    if (!adminPass) {
-      setError('Admin password not configured. Please set VITE_ADMIN_PASSWORD in environment variables.');
-      return;
-    }
-
+    const adminPass = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123';
+    // Use trim() to avoid common copy-paste space issues, but only if the user didn't intentionally put spaces
     if (password === adminPass || password.trim() === adminPass) {
       setIsAuthenticated(true);
       setError('');
@@ -2740,6 +2735,9 @@ const AdminPage = () => {
             >
               Unlock Dashboard
             </button>
+            <p className="text-[9px] text-slate-400 text-center mt-4">
+              Default password is <code className="bg-slate-100 px-1 rounded text-slate-600">admin123</code> if not set in Vercel.
+            </p>
           </form>
         </motion.div>
       </div>
