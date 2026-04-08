@@ -81,8 +81,30 @@ CREATE TABLE IF NOT EXISTS ads (
   link_url TEXT,
   description TEXT,
   is_active BOOLEAN DEFAULT TRUE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  impressions INTEGER DEFAULT 0,
+  clicks INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Functions to increment ad metrics
+CREATE OR REPLACE FUNCTION increment_ad_impressions(ad_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE ads
+  SET impressions = impressions + 1
+  WHERE id = ad_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION increment_ad_clicks(ad_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE ads
+  SET clicks = clicks + 1
+  WHERE id = ad_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 9. Storage Setup (Run these manually in SQL Editor if storage.buckets table exists)
 -- Create storage bucket for media (images and videos)

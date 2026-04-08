@@ -473,8 +473,9 @@ const ConfessionsDisplayPage = () => {
 
       const { data, error } = await supabase
         .from('messages')
-        .select('id, content, likes, created_at, approved')
+        .select('id, content, likes, created_at, approved, expires_at')
         .eq('approved', true)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .range(from, to);
 

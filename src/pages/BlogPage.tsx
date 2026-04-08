@@ -420,7 +420,8 @@ const BlogPage = () => {
     try {
       let query = supabase
         .from('posts')
-        .select('id, title, content, image, author, author_id, category, url, likes, created_at');
+        .select('id, title, content, image, author, author_id, category, url, likes, created_at, expires_at')
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
       const { data, error } = await query.order('created_at', { ascending: false });
       

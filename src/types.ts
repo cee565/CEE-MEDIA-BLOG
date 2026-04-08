@@ -101,5 +101,8 @@ export interface Ad {
   link_url?: string;
   description?: string;
   is_active: boolean;
+  expires_at?: string;
+  impressions: number;
+  clicks: number;
   created_at: string;
 }

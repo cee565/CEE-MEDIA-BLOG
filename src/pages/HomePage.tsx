@@ -48,7 +48,8 @@ const HomePage = () => {
         // Fetch trending poll - optimized select
         const { data: polls } = await supabase
           .from('polls')
-          .select('id, question, description, options, image, total_votes')
+          .select('id, question, description, options, image, total_votes, expires_at')
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('total_votes', { ascending: false })
           .limit(1);
         if (polls && polls.length > 0) setTrendingPoll(polls[0] as Poll);
@@ -56,7 +57,8 @@ const HomePage = () => {
         // Fetch hot post - optimized select
         const { data: posts } = await supabase
           .from('posts')
-          .select('id, title, author, content, image, category, likes')
+          .select('id, title, author, content, image, category, likes, expires_at')
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('likes', { ascending: false })
           .limit(1);
         if (posts && posts.length > 0) setHotPost(posts[0] as Post);
@@ -64,8 +66,9 @@ const HomePage = () => {
         // Fetch latest approved message - optimized select
         const { data: messages } = await supabase
           .from('messages')
-          .select('id, content, created_at')
+          .select('id, content, created_at, expires_at')
           .eq('approved', true)
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
           .limit(1);
         if (messages && messages.length > 0) setLatestMessage(messages[0] as Message);

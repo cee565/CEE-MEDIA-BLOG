@@ -35,7 +35,18 @@ const AdminDashboard = () => {
   const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '', url: '' });
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [newAd, setNewAd] = useState({ name: '', media_url: '', media_type: 'image' as 'image' | 'video', link_url: '', description: '', mediaFile: null as File | null });
+  const [newAd, setNewAd] = useState({ 
+    name: '', 
+    media_url: '', 
+    media_type: 'image' as 'image' | 'video', 
+    link_url: '', 
+    description: '', 
+    mediaFile: null as File | null, 
+    duration: 'never', 
+    custom_expires_at: '',
+    custom_duration_value: '1',
+    custom_duration_unit: 'hours' as 'minutes' | 'hours' | 'days'
+  });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id: string; table: string; data: any } | null>(null);
 
@@ -150,8 +161,13 @@ const AdminDashboard = () => {
                 if (colErr.message.includes('url')) missingColumns.push('url');
               }
             } else if (table === 'ads') {
-              const { error: colErr } = await supabase.from('ads').select('media_url').limit(1);
-              if (colErr && colErr.code === 'PGRST106' && colErr.message.includes('media_url')) missingColumns.push('media_url');
+              const { error: colErr } = await supabase.from('ads').select('media_url, expires_at, impressions, clicks').limit(1);
+              if (colErr && colErr.code === 'PGRST106') {
+                if (colErr.message.includes('media_url')) missingColumns.push('media_url');
+                if (colErr.message.includes('expires_at')) missingColumns.push('expires_at');
+                if (colErr.message.includes('impressions')) missingColumns.push('impressions');
+                if (colErr.message.includes('clicks')) missingColumns.push('clicks');
+              }
             }
           }
           
@@ -661,6 +677,23 @@ const AdminDashboard = () => {
     }
   };
 
+  const cleanupExpiredAds = async () => {
+    try {
+      const { error } = await supabase
+        .from('ads')
+        .delete()
+        .lt('expires_at', new Date().toISOString());
+
+      if (error) throw error;
+      
+      showNotification("Expired ads deleted successfully", "success");
+      fetchData(); // Refresh list
+    } catch (e: any) {
+      console.error("Cleanup failed", e);
+      showNotification(`Failed to cleanup ads: ${e.message || e}`, "error");
+    }
+  };
+
   const handleCreateAd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAd.name) {
@@ -686,13 +719,40 @@ const AdminDashboard = () => {
         return;
       }
 
+      let expiresAt = null;
+      if (newAd.duration !== 'never') {
+        const now = new Date();
+        if (newAd.duration === '1h') now.setHours(now.getHours() + 1);
+        else if (newAd.duration === '2h') now.setHours(now.getHours() + 2);
+        else if (newAd.duration === '6h') now.setHours(now.getHours() + 6);
+        else if (newAd.duration === '12h') now.setHours(now.getHours() + 12);
+        else if (newAd.duration === '24h') now.setHours(now.getHours() + 24);
+        else if (newAd.duration === '7d') now.setDate(now.getDate() + 7);
+        else if (newAd.duration === '30d') now.setDate(now.getDate() + 30);
+        else if (newAd.duration === 'custom_duration') {
+          const val = parseInt(newAd.custom_duration_value);
+          if (newAd.custom_duration_unit === 'minutes') now.setMinutes(now.getMinutes() + val);
+          else if (newAd.custom_duration_unit === 'hours') now.setHours(now.getHours() + val);
+          else if (newAd.custom_duration_unit === 'days') now.setDate(now.getDate() + val);
+          expiresAt = now.toISOString();
+        }
+        else if (newAd.duration === 'custom_date' && newAd.custom_expires_at) {
+          expiresAt = new Date(newAd.custom_expires_at).toISOString();
+        }
+        
+        if (newAd.duration !== 'custom_date' && newAd.duration !== 'custom_duration') {
+          expiresAt = now.toISOString();
+        }
+      }
+
       const { data, error } = await supabase.from('ads').insert({
         name: newAd.name,
         media_url: mediaUrl,
         media_type: newAd.media_type,
         link_url: newAd.link_url,
         description: newAd.description,
-        is_active: true
+        is_active: true,
+        expires_at: expiresAt
       }).select().single();
 
       if (error) {
@@ -708,7 +768,18 @@ const AdminDashboard = () => {
       }
 
       showNotification("Ad created successfully", "success");
-      setNewAd({ name: '', media_url: '', media_type: 'image', link_url: '', description: '', mediaFile: null });
+      setNewAd({ 
+        name: '', 
+        media_url: '', 
+        media_type: 'image', 
+        link_url: '', 
+        description: '', 
+        mediaFile: null, 
+        duration: 'never', 
+        custom_expires_at: '',
+        custom_duration_value: '1',
+        custom_duration_unit: 'hours'
+      });
     } catch (e: any) {
       console.error("Ad creation failed", e);
       showNotification(`Failed to create ad: ${e.message || e}`, "error");
@@ -2506,6 +2577,74 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 onChange={(e) => setNewAd({ ...newAd, description: e.target.value })}
                 className="w-full h-20 p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 resize-none text-sm"
               />
+
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-bold text-slate-400 uppercase ml-2">Ad Duration (Auto-Delete)</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Never', value: 'never' },
+                    { label: '1 Hour', value: '1h' },
+                    { label: '2 Hours', value: '2h' },
+                    { label: '6 Hours', value: '6h' },
+                    { label: '12 Hours', value: '12h' },
+                    { label: '24 Hours', value: '24h' },
+                    { label: '7 Days', value: '7d' },
+                    { label: '30 Days', value: '30d' },
+                    { label: 'Duration', value: 'custom_duration' },
+                    { label: 'Date', value: 'custom_date' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setNewAd({ ...newAd, duration: opt.value })}
+                      className={`p-2 rounded-lg text-[10px] font-bold transition-all ${
+                        newAd.duration === opt.value 
+                          ? 'bg-yellow-500 text-white shadow-md' 
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {newAd.duration === 'custom_duration' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-2">Set Custom Duration</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={newAd.custom_duration_value}
+                      onChange={(e) => setNewAd({ ...newAd, custom_duration_value: e.target.value })}
+                      className="w-20 p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
+                    />
+                    <select
+                      value={newAd.custom_duration_unit}
+                      onChange={(e) => setNewAd({ ...newAd, custom_duration_unit: e.target.value as any })}
+                      className="flex-1 p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
+                    >
+                      <option value="minutes">Minutes</option>
+                      <option value="hours">Hours</option>
+                      <option value="days">Days</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {newAd.duration === 'custom_date' && (
+                <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase ml-2">Custom Expiry Date</label>
+                  <input
+                    type="datetime-local"
+                    value={newAd.custom_expires_at}
+                    onChange={(e) => setNewAd({ ...newAd, custom_expires_at: e.target.value })}
+                    className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-yellow-400 text-sm"
+                  />
+                </div>
+              )}
+
               <button type="submit" className="w-full bg-yellow-500 text-white p-3 rounded-xl font-bold shadow-lg hover:bg-yellow-600 transition-all text-xs">
                 Publish Ad
               </button>
@@ -2514,6 +2653,26 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
 
           {/* Ads List */}
           <div className="space-y-3">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Ads</h3>
+              <div className="flex space-x-2">
+                <div className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100 flex items-center space-x-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Total Impressions:</span>
+                  <span className="text-[10px] font-black text-slate-800">{ads.reduce((acc, ad) => acc + (ad.impressions || 0), 0).toLocaleString()}</span>
+                </div>
+                <div className="bg-slate-50 px-3 py-1 rounded-lg border border-slate-100 flex items-center space-x-2">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase">Total Clicks:</span>
+                  <span className="text-[10px] font-black text-slate-800">{ads.reduce((acc, ad) => acc + (ad.clicks || 0), 0).toLocaleString()}</span>
+                </div>
+                <button 
+                  onClick={cleanupExpiredAds}
+                  className="flex items-center space-x-1 text-[9px] font-bold text-orange-500 hover:text-orange-600 transition-colors bg-orange-50 px-2 py-1 rounded-lg"
+                >
+                  <RefreshCw size={10} />
+                  <span>Cleanup Expired</span>
+                </button>
+              </div>
+            </div>
             {ads.map((ad) => (
               <div key={ad.id} className={`bg-white p-4 rounded-2xl border ${ad.is_active ? 'border-slate-100' : 'border-red-100 opacity-60'} card-shadow flex justify-between items-center group`}>
                 <div className="flex items-center space-x-3">
@@ -2530,9 +2689,39 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                     <h4 className="font-bold text-slate-800 flex items-center text-sm">
                       {ad.name}
                       {!ad.is_active && <span className="ml-2 text-[7px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full uppercase">Inactive</span>}
+                      {ad.expires_at && new Date(ad.expires_at) < new Date() && (
+                        <span className="ml-2 text-[7px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full uppercase">Expired</span>
+                      )}
                     </h4>
                     <p className="text-[10px] text-slate-400 line-clamp-1">{ad.link_url}</p>
-                    <p className="text-[9px] text-slate-300 uppercase font-bold tracking-widest">{format(new Date(ad.created_at), 'MMM d, yyyy')}</p>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-[9px] text-slate-300 uppercase font-bold tracking-widest">{format(new Date(ad.created_at), 'MMM d, yyyy')}</p>
+                      {ad.expires_at && (
+                        <p className="text-[9px] text-orange-400 uppercase font-bold tracking-widest flex items-center">
+                          <Clock size={8} className="mr-1" /> Exp: {format(new Date(ad.expires_at), 'MMM d, HH:mm')}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Performance Metrics */}
+                    <div className="flex items-center space-x-3 mt-1.5">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">Impressions</span>
+                        <span className="text-[10px] font-black text-slate-700">{(ad.impressions || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">Clicks</span>
+                        <span className="text-[10px] font-black text-slate-700">{(ad.clicks || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">CTR</span>
+                        <span className="text-[10px] font-black text-indigo-600">
+                          {ad.impressions > 0 
+                            ? ((ad.clicks / ad.impressions) * 100).toFixed(2) 
+                            : '0.00'}%
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex space-x-1.5">

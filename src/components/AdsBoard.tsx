@@ -23,7 +23,28 @@ const AdsBoard: React.FC = React.memo(() => {
     // Reset video duration when ad changes
     setVideoDuration(5);
     setIsMetadataLoaded(false);
-  }, [currentIndex]);
+    
+    // Record impression
+    if (ads.length > 0 && ads[currentIndex]) {
+      recordImpression(ads[currentIndex].id);
+    }
+  }, [currentIndex, ads.length]);
+
+  const recordImpression = async (adId: string) => {
+    try {
+      await supabase.rpc('increment_ad_impressions', { ad_id: adId });
+    } catch (error) {
+      console.error('Error recording impression:', error);
+    }
+  };
+
+  const recordClick = async (adId: string) => {
+    try {
+      await supabase.rpc('increment_ad_clicks', { ad_id: adId });
+    } catch (error) {
+      console.error('Error recording click:', error);
+    }
+  };
 
   useEffect(() => {
     if (ads.length <= 1) return;
@@ -49,6 +70,7 @@ const AdsBoard: React.FC = React.memo(() => {
         .from('ads')
         .select('*')
         .eq('is_active', true)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -170,6 +192,7 @@ const AdsBoard: React.FC = React.memo(() => {
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="relative h-full w-full block"
+                onClick={() => recordClick(currentAd.id)}
               >
                 {AdContent}
               </a>
