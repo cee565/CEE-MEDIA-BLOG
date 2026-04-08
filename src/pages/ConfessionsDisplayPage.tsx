@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Message, MessageComment } from '../types';
-import { MessageSquare, Heart, Clock, ShieldCheck, ChevronDown, ChevronUp, Send, User, Share2, Link, Check, X } from 'lucide-react';
+import { MessageSquare, Heart, Clock, ShieldCheck, ChevronDown, ChevronUp, Send, User, Share2, Link as LinkIcon, Check, X, Zap, ChevronRight } from 'lucide-react';
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import MetaTags from '../components/MetaTags';
 
@@ -271,7 +271,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
                           onClick={() => { copyToClipboard(); setShowShareMenu(false); }}
                           className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700"
                         >
-                          {copied ? <Check size={14} className="text-green-500" /> : <Link size={14} />}
+                          {copied ? <Check size={14} className="text-green-500" /> : <LinkIcon size={14} />}
                           <span className="text-[10px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
                         </button>
                         <button 
@@ -473,9 +473,8 @@ const ConfessionsDisplayPage = () => {
 
       const { data, error } = await supabase
         .from('messages')
-        .select('id, content, likes, created_at, approved, expires_at')
+        .select('id, content, likes, created_at, approved')
         .eq('approved', true)
-        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -559,11 +558,45 @@ const ConfessionsDisplayPage = () => {
           >
             Real stories, real voices, completely anonymous. All messages are reviewed by our team before appearing here.
           </motion.p>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="pt-4"
+          >
+            <Link 
+              to="/confessions/submit"
+              className="inline-flex items-center space-x-3 bg-brand-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-secondary transition-all group"
+            >
+              <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+              <span>Share Your Own Story</span>
+            </Link>
+          </motion.div>
         </div>
+
+        {/* Navigator Banner */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="bg-brand-accent/10 border border-brand-accent/20 p-4 rounded-2xl flex items-center justify-between group cursor-pointer"
+          onClick={() => window.location.href = '/confessions/submit'}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-brand-accent text-brand-primary rounded-full flex items-center justify-center">
+              <Zap size={16} />
+            </div>
+            <p className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-widest">
+              Have a secret? <span className="text-brand-primary">Go to "Write Message"</span> to share it anonymously!
+            </p>
+          </div>
+          <ChevronRight size={16} className="text-brand-primary group-hover:translate-x-1 transition-transform" />
+        </motion.div>
 
         {/* Messages Grid */}
         {loading && page === 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 content-auto">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-white rounded-[2rem] border border-slate-100 h-64 animate-pulse p-8 space-y-6">
                 <div className="flex items-center space-x-3">
@@ -583,7 +616,7 @@ const ConfessionsDisplayPage = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 content-auto">
               {messages.map((message) => (
                 <ConfessionCard key={message.id} message={message} />
               ))}
@@ -617,6 +650,21 @@ const ConfessionsDisplayPage = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button for Mobile */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 1, type: 'spring' }}
+        className="fixed bottom-8 right-8 z-50 md:hidden"
+      >
+        <Link
+          to="/confessions/submit"
+          className="w-16 h-16 bg-brand-primary text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all border-4 border-white"
+        >
+          <Send size={24} />
+        </Link>
+      </motion.div>
     </div>
   );
 };

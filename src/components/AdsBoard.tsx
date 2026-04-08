@@ -184,7 +184,7 @@ const AdsBoard: React.FC = React.memo(() => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex flex-col"
+            className="absolute inset-0 flex flex-col will-change-[transform,opacity]"
           >
             {currentAd.link_url ? (
               <a 

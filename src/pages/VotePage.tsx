@@ -497,7 +497,7 @@ const VotePage = () => {
           </div>
         </div>
       ) : (
-        <div className="space-y-16">
+        <div className="space-y-16 content-auto">
           {selectedGroup ? (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}

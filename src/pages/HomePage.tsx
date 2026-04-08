@@ -48,8 +48,7 @@ const HomePage = () => {
         // Fetch trending poll - optimized select
         const { data: polls } = await supabase
           .from('polls')
-          .select('id, question, description, options, image, total_votes, expires_at')
-          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+          .select('id, question, description, options, image, total_votes')
           .order('total_votes', { ascending: false })
           .limit(1);
         if (polls && polls.length > 0) setTrendingPoll(polls[0] as Poll);
@@ -57,8 +56,7 @@ const HomePage = () => {
         // Fetch hot post - optimized select
         const { data: posts } = await supabase
           .from('posts')
-          .select('id, title, author, content, image, category, likes, expires_at')
-          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+          .select('id, title, author, content, image, category, likes')
           .order('likes', { ascending: false })
           .limit(1);
         if (posts && posts.length > 0) setHotPost(posts[0] as Post);
@@ -66,9 +64,8 @@ const HomePage = () => {
         // Fetch latest approved message - optimized select
         const { data: messages } = await supabase
           .from('messages')
-          .select('id, content, created_at, expires_at')
+          .select('id, content, created_at')
           .eq('approved', true)
-          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .order('created_at', { ascending: false })
           .limit(1);
         if (messages && messages.length > 0) setLatestMessage(messages[0] as Message);
@@ -151,7 +148,7 @@ const HomePage = () => {
         </section>
 
         {/* Categories */}
-        <section className="space-y-10">
+        <section className="space-y-10 content-auto">
           <div className="flex items-center space-x-6">
             <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Explore Categories</h2>
             <div className="h-px flex-grow bg-slate-100"></div>
@@ -173,7 +170,7 @@ const HomePage = () => {
         </section>
 
         {/* Featured Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 content-auto">
           {/* Trending Poll */}
             <Link 
               to={trendingPoll ? `/vote?id=${trendingPoll.id}` : "/vote"}
@@ -276,7 +273,7 @@ const HomePage = () => {
         </div>
 
         {/* Stats */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-8 content-auto">
           {[
             { label: 'Active Users', value: stats.visitors, icon: Users },
             { label: 'Votes Cast', value: stats.votes, icon: Activity },
@@ -293,7 +290,7 @@ const HomePage = () => {
         </section>
 
         {/* Footer CTA */}
-        <section className="bg-slate-900 rounded-[3rem] p-16 md:p-24 text-center space-y-8 relative overflow-hidden">
+        <section className="bg-slate-900 rounded-[3rem] p-16 md:p-24 text-center space-y-8 relative overflow-hidden content-auto">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15),transparent_70%)]"></div>
           <div className="relative z-10 space-y-4">
             <h2 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter leading-none">Join the Conversation</h2>

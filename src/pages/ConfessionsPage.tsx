@@ -77,7 +77,7 @@ const ConfessionsPage = () => {
 
       setContent('');
       setSuccess(true);
-      toast.success('Message sent! Awaiting admin approval.');
+      toast.success('Message sent! It will appear on the board once approved.');
       setTimeout(() => setSuccess(false), 5000);
     } catch (err: any) {
       console.error("Message send failed", err);
@@ -167,7 +167,7 @@ const ConfessionsPage = () => {
                 <CheckCircle2 size={20} />
                 <span className="uppercase tracking-widest">Sent Successfully!</span>
               </div>
-              <p className="text-[10px] text-green-500 font-medium opacity-80 uppercase tracking-widest">Awaiting admin approval.</p>
+              <p className="text-[10px] text-green-500 font-medium opacity-80 uppercase tracking-widest">Will appear on the board once approved.</p>
             </motion.div>
           )}
           {error && (

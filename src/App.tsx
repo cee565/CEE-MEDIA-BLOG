@@ -107,6 +107,31 @@ const Navbar = () => {
   );
 };
 
+const AnimatedRoutes = () => {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Routes location={location}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/vote" element={<VotePage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/confessions" element={<ConfessionsDisplayPage />} />
+          <Route path="/confessions/submit" element={<ConfessionsPage />} />
+          <Route path="/team" element={<TeamPage />} />
+          <Route path="/admin/*" element={<AdminPage />} />
+        </Routes>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const App = () => {
   const isConfigured = !!import.meta.env.VITE_SUPABASE_URL && !!import.meta.env.VITE_SUPABASE_ANON_KEY;
 
@@ -237,15 +262,7 @@ const App = () => {
                   </div>
                 </div>
               }>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/vote" element={<VotePage />} />
-                  <Route path="/blog" element={<BlogPage />} />
-                  <Route path="/confessions" element={<ConfessionsDisplayPage />} />
-                  <Route path="/confessions/submit" element={<ConfessionsPage />} />
-                  <Route path="/team" element={<TeamPage />} />
-                  <Route path="/admin/*" element={<AdminPage />} />
-                </Routes>
+                <AnimatedRoutes />
               </React.Suspense>
             </main>
             
