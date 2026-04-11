@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Logo } from '../components/Logo';
 import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup } from '../types';
-import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff } from 'lucide-react';
+import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff, Trophy } from 'lucide-react';
 import { format, addHours, addDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie } from 'recharts';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -28,8 +28,8 @@ const AdminDashboard = () => {
   const [showAnalysis, setShowAnalysis] = useState<Poll | null>(null);
 
   // Form states
-  const [newPollGroup, setNewPollGroup] = useState({ title: '', description: '', image: null as File | null, duration: 'never', custom_expires_at: '' });
-  const [newPoll, setNewPoll] = useState({ question: '', description: '', group_id: '', options: [{ text: '', image: null as File | null }, { text: '', image: null as File | null }], image: null as File | null, duration: 'never', custom_expires_at: '' });
+  const [newPollGroup, setNewPollGroup] = useState({ title: '', description: '', image: null as File | null, duration: 'never', custom_expires_at: '', starts_at: '' });
+  const [newPoll, setNewPoll] = useState({ question: '', description: '', group_id: '', options: [{ text: '', image: null as File | null }, { text: '', image: null as File | null }], image: null as File | null, duration: 'never', custom_expires_at: '', starts_at: '' });
   const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '', category: 'Gist', url: '' });
   const [newMessage, setNewMessage] = useState({ content: '', url: '' });
   const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '', url: '' });
@@ -339,6 +339,7 @@ const AdminDashboard = () => {
         description: newPollGroup.description,
         image: imageUrl,
         expires_at: expiresAt,
+        starts_at: newPollGroup.starts_at ? new Date(newPollGroup.starts_at).toISOString() : null,
         is_ended: false
       }).select().single();
 
@@ -351,8 +352,8 @@ const AdminDashboard = () => {
           return [data as PollGroup, ...prev];
         });
       }
-      showNotification("Poll group created successfully", "success");
-      setNewPollGroup({ title: '', description: '', image: null, duration: 'never', custom_expires_at: '' });
+      showNotification("Vote group created successfully", "success");
+      setNewPollGroup({ title: '', description: '', image: null, duration: 'never', custom_expires_at: '', starts_at: '' });
     } catch (e: any) {
       console.error("Poll group creation failed", e);
       showNotification(`Failed to create poll group: ${e.message}`, "error");
@@ -409,6 +410,7 @@ const AdminDashboard = () => {
         image: imageUrl,
         likes: 0,
         expires_at: expiresAt,
+        starts_at: newPoll.starts_at ? new Date(newPoll.starts_at).toISOString() : null,
         is_ended: false
       }).select().single();
 
@@ -424,8 +426,8 @@ const AdminDashboard = () => {
         });
       }
 
-      showNotification("Poll created successfully", "success");
-      setNewPoll({ question: '', description: '', group_id: '', options: [{ text: '', image: null }, { text: '', image: null }], image: null, duration: 'never', custom_expires_at: '' });
+      showNotification("Vote created successfully", "success");
+      setNewPoll({ question: '', description: '', group_id: '', options: [{ text: '', image: null }, { text: '', image: null }], image: null, duration: 'never', custom_expires_at: '', starts_at: '' });
     } catch (e: any) {
       console.error("Poll creation failed", e);
       showNotification(`Failed to create poll: ${e.message || 'Unknown error'}`, "error");
@@ -880,9 +882,43 @@ const AdminDashboard = () => {
 
     const { id, table } = itemToDelete;
     try {
+      // Find the item to get its media URLs before deleting
+      let item: any = null;
+      if (table === 'polls') item = polls.find(i => i.id === id);
+      else if (table === 'poll_groups') item = pollGroups.find(i => i.id === id);
+      else if (table === 'posts') item = posts.find(i => i.id === id);
+      else if (table === 'messages') item = messages.find(i => i.id === id);
+      else if (table === 'team') item = team.find(i => i.id === id);
+      else if (table === 'ads') item = ads.find(i => i.id === id);
+
+      // Collect all media URLs to delete from storage
+      const urlsToDelete: string[] = [];
+      if (item) {
+        if (item.image) urlsToDelete.push(item.image);
+        if (item.media_url) urlsToDelete.push(item.media_url);
+        if (item.options && Array.isArray(item.options)) {
+          item.options.forEach((opt: any) => {
+            if (opt && typeof opt === 'object' && opt.image) {
+              urlsToDelete.push(opt.image);
+            }
+          });
+        }
+      }
+
+      // Delete from database
       const { error } = await supabase.from(table).delete().eq('id', id);
       
       if (error) throw error;
+
+      // Delete from storage if URLs are found
+      for (const url of urlsToDelete) {
+        if (url && url.includes('supabase.co/storage/v1/object/public/media/')) {
+          const path = url.split('/media/').pop();
+          if (path) {
+            await supabase.storage.from('media').remove([path]);
+          }
+        }
+      }
 
       // Optimistically update state
       if (table === 'polls') setPolls(prev => prev.filter(i => i.id !== id));
@@ -993,7 +1029,7 @@ const AdminDashboard = () => {
             >
               <div className="p-4 md:p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">Poll Analysis</h3>
+                  <h3 className="text-lg font-bold text-slate-800">Vote Analysis</h3>
                   <p className="text-[10px] text-slate-500 mt-1">{showAnalysis.question}</p>
                 </div>
                 <button onClick={() => setShowAnalysis(null)} className="p-1.5 hover:bg-slate-200 rounded-full transition-colors">
@@ -1029,9 +1065,17 @@ const AdminDashboard = () => {
                   : 'text-slate-500 hover:text-slate-900 hover:bg-white'
               }`}
             >
-              {tab.replace('_', ' ')}
+              {tab === 'polls' ? 'votes' : tab === 'poll_groups' ? 'vote groups' : tab.replace('_', ' ')}
             </button>
           ))}
+          {/* Mock Exam Admin Link */}
+          <button
+            onClick={() => window.location.href = '/quiz/admin'}
+            className="ml-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap bg-brand-accent text-brand-primary shadow-md hover:bg-brand-focus flex items-center space-x-2"
+          >
+            <Trophy size={14} />
+            <span>Mock Exam Admin</span>
+          </button>
         </div>
       </div>
 
@@ -1838,7 +1882,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-[1.5rem] card-shadow border border-slate-50">
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
-              <PlusCircle className="mr-2 text-purple-600" size={20} /> Create New Poll Group
+              <PlusCircle className="mr-2 text-purple-600" size={20} /> Create New Vote Group
             </h3>
             <form onSubmit={handleCreatePollGroup} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1956,7 +2000,7 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   <p className="text-xs text-slate-500 line-clamp-2 mb-3">{group.description}</p>
                   <div className="mt-auto pt-3 border-t border-slate-50 flex justify-between items-center">
                     <span className="text-[9px] font-bold text-slate-400 uppercase">
-                      {polls.filter(p => p.group_id === group.id).length} Polls
+                      {polls.filter(p => p.group_id === group.id).length} Votes
                     </span>
                     {group.expires_at && (
                       <span className="text-[9px] font-bold text-purple-500 uppercase">
@@ -1975,11 +2019,11 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
           {/* Create Poll */}
           <div className="bg-white p-4 rounded-2xl card-shadow border border-slate-50 space-y-4 self-start">
             <h3 className="text-lg font-bold text-slate-800 flex items-center">
-              <Plus className="mr-2 text-purple-600" size={20} /> Create New Poll
+              <Plus className="mr-2 text-purple-600" size={20} /> Create New Vote
             </h3>
             <form onSubmit={handleCreatePoll} className="space-y-3">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Poll Group (Optional)</label>
+                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Vote Group (Optional)</label>
                 <select
                   value={newPoll.group_id || ''}
                   onChange={(e) => setNewPoll({ ...newPoll, group_id: e.target.value })}
@@ -1993,13 +2037,13 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               </div>
               <input
                 type="text"
-                placeholder="Poll Question"
+                placeholder="Vote Question"
                 value={newPoll.question || ''}
                 onChange={(e) => setNewPoll({ ...newPoll, question: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm"
               />
               <textarea
-                placeholder="Poll Description (Optional)"
+                placeholder="Vote Description (Optional)"
                 value={newPoll.description || ''}
                 onChange={(e) => setNewPoll({ ...newPoll, description: e.target.value })}
                 className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm min-h-[80px] resize-none"
@@ -2020,21 +2064,32 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   {newPoll.image ? (newPoll.image as any).name : 'Upload Poll Image (Optional)'}
                 </label>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Poll Duration</label>
-                <select
-                  value={newPoll.duration || 'never'}
-                  onChange={(e) => setNewPoll({ ...newPoll, duration: e.target.value })}
-                  className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-xs"
-                >
-                  <option value="never">Never Expires</option>
-                  <option value="1h">1 Hour</option>
-                  <option value="6h">6 Hours</option>
-                  <option value="1d">1 Day</option>
-                  <option value="3d">3 Days</option>
-                  <option value="7d">7 Days</option>
-                  <option value="custom">Custom Time</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Starts At (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={newPoll.starts_at || ''}
+                    onChange={(e) => setNewPoll({ ...newPoll, starts_at: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase ml-2">Vote Duration</label>
+                  <select
+                    value={newPoll.duration || 'never'}
+                    onChange={(e) => setNewPoll({ ...newPoll, duration: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-bold text-slate-600 text-xs"
+                  >
+                    <option value="never">Never Expires</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="6h">6 Hours</option>
+                    <option value="1d">1 Day</option>
+                    <option value="3d">3 Days</option>
+                    <option value="7d">7 Days</option>
+                    <option value="custom">Custom Time</option>
+                  </select>
+                </div>
               </div>
               {newPoll.duration === 'custom' && (
                 <div className="space-y-2">

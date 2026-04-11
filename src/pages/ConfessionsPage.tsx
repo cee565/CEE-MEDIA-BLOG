@@ -128,14 +128,18 @@ const ConfessionsPage = () => {
           <span className="font-black text-xs uppercase tracking-widest">Completely Anonymous</span>
         </div>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="What's on your mind?..."
-            className="w-full h-32 p-5 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 outline-none transition-all resize-none text-slate-700 text-sm font-medium"
-            maxLength={500}
-          />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Your Message</label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="What's on your mind?..."
+              className="w-full h-32 p-5 rounded-2xl bg-slate-50 border border-slate-100 focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 outline-none transition-all resize-none text-slate-700 text-sm font-medium"
+              maxLength={500}
+            />
+          </div>
+
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{content.length}/500 characters</span>
             <button

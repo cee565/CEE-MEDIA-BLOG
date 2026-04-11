@@ -56,13 +56,16 @@ const TeamMemberCard: React.FC<{ member: TeamMember }> = ({ member }) => {
       className="group bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 hover:border-brand-secondary hover:shadow-2xl transition-all duration-500 flex flex-col"
     >
       <div className="aspect-[4/5] relative overflow-hidden bg-slate-50">
-        <img 
-          src={member.image || `https://picsum.photos/seed/${member.id}/400/500`} 
-          alt={member.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-          referrerPolicy="no-referrer"
-          loading="lazy"
-        />
+        {member.image && (
+          <img 
+            src={member.image} 
+            alt={member.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
         
         <div className="absolute top-6 right-6 z-10">

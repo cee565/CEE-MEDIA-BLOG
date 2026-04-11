@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Home, Vote, BookOpen, MessageSquare, Shield, Menu, X, TrendingUp, Zap, MessageCircle, BarChart3, Users } from 'lucide-react';
+import { Home, Vote, BookOpen, MessageSquare, Shield, Menu, X, TrendingUp, Zap, MessageCircle, BarChart3, Users, Trophy } from 'lucide-react';
 import { WhatsAppIcon, TikTokIcon, XIcon } from './components/BrandIcons';
 import { supabase } from './supabase';
 import { format } from 'date-fns';
@@ -19,6 +19,12 @@ const ConfessionsPage = React.lazy(() => import('./pages/ConfessionsPage'));
 const ConfessionsDisplayPage = React.lazy(() => import('./pages/ConfessionsDisplayPage'));
 const TeamPage = React.lazy(() => import('./pages/TeamPage'));
 const AdminPage = React.lazy(() => import('./pages/AdminPage'));
+const TokenEntryPage = React.lazy(() => import('./pages/TokenEntryPage'));
+const QuizPage = React.lazy(() => import('./pages/QuizPage'));
+const ResultPage = React.lazy(() => import('./pages/ResultPage'));
+const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage'));
+const QuizAdminPage = React.lazy(() => import('./pages/QuizAdminPage'));
+const RegistrationPage = React.lazy(() => import('./pages/RegistrationPage'));
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +36,7 @@ const Navbar = () => {
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
     { name: 'Write Message', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
+    // { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
   ];
 
@@ -126,6 +133,12 @@ const AnimatedRoutes = () => {
           <Route path="/confessions/submit" element={<ConfessionsPage />} />
           <Route path="/team" element={<TeamPage />} />
           <Route path="/admin/*" element={<AdminPage />} />
+          <Route path="/mock-exam/register" element={<RegistrationPage />} />
+          <Route path="/mock-exam/entry" element={<TokenEntryPage />} />
+          <Route path="/mock-exam/start" element={<QuizPage />} />
+          <Route path="/mock-exam/result" element={<ResultPage />} />
+          <Route path="/mock-exam/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/quiz/admin" element={<QuizAdminPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -296,7 +309,7 @@ const App = () => {
                     <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
                   </div>
                 </div>
-                <div className="mt-12 pt-8 border-t border-white/5 text-center">
+                <div className="mt-12 pt-8 border-t border-white/5 text-center flex flex-col items-center space-y-4">
                   <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA. All rights reserved.</p>
                 </div>
               </div>

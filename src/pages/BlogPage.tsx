@@ -167,13 +167,16 @@ const BlogCard = React.memo(({ post, fullView = false }: { post: Post, fullView?
     >
       {!fullView && (
         <div className="h-48 overflow-hidden relative">
-          <img 
-            src={post.image || `https://picsum.photos/seed/${post.id}/600/400?blur=1`} 
-            alt={post.title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            referrerPolicy="no-referrer"
-            loading="lazy"
-          />
+          {post.image && (
+            <img 
+              src={post.image} 
+              alt={post.title}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
+            />
+          )}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
             <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full text-[10px] font-black text-slate-900 flex items-center w-fit uppercase tracking-widest shadow-sm">
               <Calendar size={12} className="mr-1.5 text-brand-secondary" /> {format(new Date(post.created_at), 'MMM d, yyyy HH:mm:ss')}
@@ -420,8 +423,7 @@ const BlogPage = () => {
     try {
       let query = supabase
         .from('posts')
-        .select('id, title, content, image, author, author_id, category, url, likes, created_at, expires_at')
-        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
+        .select('id, title, content, image, author, author_id, category, url, likes, created_at');
 
       const { data, error } = await query.order('created_at', { ascending: false });
       
@@ -479,8 +481,15 @@ const BlogPage = () => {
       window.scrollTo(0, 0);
     }
 
-    // Real-time subscription for comment counts
-    const channel = supabase
+    // Real-time subscription for posts and comment counts
+    const postsChannel = supabase
+      .channel('blog_posts_channel')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'posts' }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    const commentsChannel = supabase
       .channel('blog_comments_channel')
       .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'post_comments' }, (payload: any) => {
         setPosts(prev => prev.map(p => 
@@ -492,7 +501,8 @@ const BlogPage = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(postsChannel);
+      supabase.removeChannel(commentsChannel);
     };
   }, [searchQuery, selectedCategory]);
 

@@ -12,7 +12,7 @@ interface MetaTagsProps {
 const MetaTags: React.FC<MetaTagsProps> = ({
   title = 'CEE MEDIA | Campus Pulse & Voting',
   description = 'Shape the future of your campus. Vote on trending topics, share your voice, and stay connected.',
-  image = 'https://media.base44.com/images/public/user_69c58cd8140b12f4f7e0ba23/fed4f0662_Screenshot_20260326-200402.jpg',
+  image = 'https://images.unsplash.com/photo-1523050335456-c38a89b7d560?auto=format&fit=crop&q=80&w=1200&h=630',
   url = window.location.href,
   type = 'website'
 }) => {

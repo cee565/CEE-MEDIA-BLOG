@@ -29,10 +29,12 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
       sanitizedData.likes = sanitizedData.likes ?? 0;
       sanitizedData.is_ended = sanitizedData.is_ended ?? false;
       sanitizedData.expires_at = sanitizedData.expires_at || '';
+      sanitizedData.starts_at = sanitizedData.starts_at || '';
     } else if (type === 'poll_group') {
       sanitizedData.title = sanitizedData.title || '';
       sanitizedData.description = sanitizedData.description || '';
       sanitizedData.expires_at = sanitizedData.expires_at || '';
+      sanitizedData.starts_at = sanitizedData.starts_at || '';
       sanitizedData.is_ended = sanitizedData.is_ended ?? false;
     } else if (type === 'post') {
       sanitizedData.title = sanitizedData.title || '';
@@ -103,7 +105,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
             {type === 'poll' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-500 ml-2">Poll Group (Optional)</label>
+                  <label className="text-sm font-bold text-slate-500 ml-2">Vote Group (Optional)</label>
                   <select
                     value={formData.group_id || ''}
                     onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
@@ -116,7 +118,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-500 ml-2">Poll Question</label>
+                  <label className="text-sm font-bold text-slate-500 ml-2">Vote Question</label>
                   <input
                     type="text"
                     value={formData.question || ''}
@@ -126,7 +128,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-500 ml-2">Poll Description</label>
+                  <label className="text-sm font-bold text-slate-500 ml-2">Vote Description</label>
                   <textarea
                     value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -243,7 +245,16 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                       onChange={(e) => setFormData({ ...formData, is_ended: e.target.checked })}
                       className="w-5 h-5 rounded border-slate-300 text-purple-500 focus:ring-purple-500"
                     />
-                    <label htmlFor="is_ended" className="font-bold text-slate-700">Poll Ended</label>
+                    <label htmlFor="is_ended" className="font-bold text-slate-700">Vote Ended</label>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-500 ml-2">Starts At</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.starts_at ? new Date(formData.starts_at).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setFormData({ ...formData, starts_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm"
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 ml-2">Expiration Date</label>
@@ -261,7 +272,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
             {type === 'poll_group' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-500 ml-2">Group Title</label>
+                  <label className="text-sm font-bold text-slate-500 ml-2">Vote Group Title</label>
                   <input
                     type="text"
                     value={formData.title || ''}
@@ -277,6 +288,26 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 min-h-[100px] resize-none"
                   />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-500 ml-2">Starts At</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.starts_at ? new Date(formData.starts_at).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setFormData({ ...formData, starts_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-500 ml-2">Expiration Date</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.expires_at ? new Date(formData.expires_at).toISOString().slice(0, 16) : ''}
+                      onChange={(e) => setFormData({ ...formData, expires_at: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+                      className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 text-sm"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-500 ml-2">Group Image</label>

@@ -178,17 +178,23 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden group flex flex-col hover:shadow-xl transition-all"
+      className="relative rounded-[2rem] border border-slate-100 bg-white overflow-hidden group flex flex-col hover:shadow-xl transition-all"
     >
-      <div className="p-6 md:p-8 space-y-6 flex-grow">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(79,70,229,0.03),transparent_50%),radial-gradient(circle_at_bottom_left,rgba(236,72,153,0.03),transparent_50%)] pointer-events-none" />
+      <div className="absolute top-0 right-0 w-48 h-48 bg-brand-secondary/5 rounded-full -mr-24 -mt-24 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-brand-accent/5 rounded-full -ml-24 -mb-24 blur-3xl pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#4f46e5 1px, transparent 1px)', backgroundSize: '32px 32px' }} />
+
+      <div className="p-6 md:p-8 space-y-6 flex-grow relative z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-brand-secondary border border-slate-100">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center border border-slate-100 bg-slate-50 text-brand-secondary transition-colors">
               <User size={20} />
             </div>
             <div className="space-y-0.5">
-              <span className="block text-xs font-black text-slate-900 uppercase tracking-widest">Anonymous</span>
-              <div className="flex items-center space-x-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <span className="block text-xs font-black uppercase tracking-widest text-slate-900">Anonymous</span>
+              <div className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                 <Clock size={12} />
                 <span>{format(new Date(message.created_at), 'MMM d, yyyy HH:mm:ss')}</span>
               </div>
@@ -204,12 +210,12 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
           className="cursor-pointer space-y-4"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          <p className="text-slate-600 font-medium leading-relaxed italic">
+          <p className="font-medium leading-relaxed italic text-slate-600">
             "{isExpanded ? message.content : truncatedContent}"
           </p>
           {message.content.length > 150 && (
             <button 
-              className="text-brand-secondary font-black text-[10px] uppercase tracking-widest flex items-center space-x-1 hover:translate-x-1 transition-transform"
+              className="font-black text-[10px] uppercase tracking-widest flex items-center space-x-1 hover:translate-x-1 transition-transform text-brand-secondary hover:text-brand-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
@@ -522,16 +528,12 @@ const ConfessionsDisplayPage = () => {
   return (
     <div className="min-h-screen pt-24 pb-24 px-4 sm:px-6 lg:px-8 bg-white relative overflow-hidden">
       <MetaTags 
-        title={sharedConfession ? 'Anonymous Confession' : 'Campus Confessions'}
-        description={sharedConfession ? sharedConfession.content.substring(0, 160) + '...' : 'Read anonymous confessions from your campus on CEE MEDIA.'}
-        type="article"
+        title={sharedConfession ? `Confession: ${sharedConfession.content.substring(0, 30)}...` : 'Campus Confessions'}
+        description={sharedConfession ? sharedConfession.content.substring(0, 160) : 'Read and share anonymous campus confessions.'}
+        type={sharedConfession ? 'article' : 'website'}
       />
 
       <div className="max-w-5xl mx-auto space-y-12 relative z-10">
-        <MetaTags 
-          title={sharedConfession ? `Confession: ${sharedConfession.content.substring(0, 30)}...` : 'Campus Confessions'}
-          description={sharedConfession ? sharedConfession.content.substring(0, 160) : 'Read and share anonymous campus confessions.'}
-        />
         {/* Header */}
         <div className="text-center space-y-4">
           <motion.div

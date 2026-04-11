@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, BookOpen, MessageCircle, Zap, ChevronRight, Send, Users, Activity, Heart, Share2, Link as LinkIcon, Check, User } from 'lucide-react';
+import { TrendingUp, BookOpen, MessageCircle, Zap, ChevronRight, Send, Users, Activity, Heart, Share2, Link as LinkIcon, Check, User, Trophy } from 'lucide-react';
 import { WhatsAppIcon, XIcon, TikTokIcon } from '../components/BrandIcons';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -105,13 +105,16 @@ const HomePage = () => {
     { name: 'Voting', icon: TrendingUp, path: '/vote' },
     { name: 'Blog', icon: BookOpen, path: '/blog' },
     { name: 'Confessions', icon: MessageCircle, path: '/confessions' },
-    { name: 'Write Message', icon: Send, path: '/confessions/submit' },
+    // { name: 'Mock Exam', icon: Trophy, path: '/mock-exam/register' },
     { name: 'Campus Gist', icon: Zap, path: '/blog' },
   ];
 
   return (
     <div className="min-h-screen bg-white brand-grid">
-      <MetaTags />
+      <MetaTags 
+        image={trendingPoll?.image || undefined}
+        description={trendingPoll ? `Trending Vote: ${trendingPoll.question}` : undefined}
+      />
       <AdsBoard />
       
       <div className="max-w-7xl mx-auto px-4 py-12 space-y-24 relative">
@@ -186,7 +189,14 @@ const HomePage = () => {
                 <>
                   {trendingPoll.image && (
                     <div className="aspect-video rounded-3xl overflow-hidden shadow-inner bg-slate-50">
-                      <img src={trendingPoll.image} alt="Poll" className="w-full h-full object-cover transition-transform duration-1000" referrerPolicy="no-referrer" loading="lazy" />
+                      <img 
+                        src={trendingPoll.image} 
+                        alt="Poll" 
+                        className="w-full h-full object-cover transition-transform duration-1000" 
+                        referrerPolicy="no-referrer" 
+                        loading="lazy" 
+                        decoding="async"
+                      />
                     </div>
                   )}
                   <h3 className="text-3xl font-black text-slate-900 leading-tight flex-grow tracking-tight">
@@ -217,7 +227,14 @@ const HomePage = () => {
               <>
                 {hotPost.image && (
                   <div className="aspect-video rounded-3xl overflow-hidden shadow-inner bg-slate-50">
-                    <img src={hotPost.image} alt="Post" className="w-full h-full object-cover transition-transform duration-1000" referrerPolicy="no-referrer" loading="lazy" />
+                    <img 
+                      src={hotPost.image} 
+                      alt="Post" 
+                      className="w-full h-full object-cover transition-transform duration-1000" 
+                      referrerPolicy="no-referrer" 
+                      loading="lazy" 
+                      decoding="async"
+                    />
                   </div>
                 )}
                 <h3 className="text-3xl font-black text-slate-900 leading-tight flex-grow tracking-tight">

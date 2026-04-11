@@ -63,6 +63,7 @@ const GroupTimer = ({ expiresAt }: { expiresAt: string }) => {
 };
 
 const PollCard = React.memo(({ poll }: { poll: Poll }) => {
+  const isUpcoming = poll.starts_at && isAfter(new Date(poll.starts_at), new Date());
   const isEnded = poll.is_ended || (poll.expires_at && isAfter(new Date(), new Date(poll.expires_at)));
   const [voted, setVoted] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -71,12 +72,13 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState<{days: number, hours: number, minutes: number, seconds: number} | null>(null);
+  const [startCountdown, setStartCountdown] = useState<{days: number, hours: number, minutes: number, seconds: number} | null>(null);
   const storageKey = `voted_poll_${poll.id}`;
 
   const showResults = voted || isEnded;
 
   useEffect(() => {
-    if (!poll.expires_at || isEnded) {
+    if (!poll.expires_at || isEnded || isUpcoming) {
       setTimeLeft(null);
       return;
     }
@@ -103,7 +105,38 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [poll.expires_at, isEnded]);
+  }, [poll.expires_at, isEnded, isUpcoming]);
+
+  useEffect(() => {
+    if (!poll.starts_at || !isUpcoming) {
+      setStartCountdown(null);
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date();
+      const start = new Date(poll.starts_at!);
+      const diff = start.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        setStartCountdown(null);
+        window.location.reload(); // Refresh to update status
+        return;
+      }
+
+      const duration = intervalToDuration({ start: now, end: start });
+      setStartCountdown({
+        days: duration.days || 0,
+        hours: duration.hours || 0,
+        minutes: duration.minutes || 0,
+        seconds: duration.seconds || 0
+      });
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [poll.starts_at, isUpcoming]);
 
   useEffect(() => {
     const hasVoted = localStorage.getItem(storageKey);
@@ -174,8 +207,8 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
     }
   };
 
-  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/api/vote/${poll.id}`;
-  const shareText = `Vote on this poll on CEE MEDIA: "${poll.question}"`;
+  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/vote?id=${poll.id}`;
+  const shareText = `Vote on this on CEE MEDIA: "${poll.question}"`;
 
   const copyToClipboard = (silent = false) => {
     navigator.clipboard.writeText(shareUrl);
@@ -213,12 +246,14 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
     >
       <div className="space-y-6">
         {poll.image && (
-          <div className="aspect-video rounded-2xl overflow-hidden shadow-inner">
+          <div className="aspect-video rounded-2xl overflow-hidden shadow-inner bg-slate-100">
             <img 
               src={poll.image} 
-              alt="Poll" 
+              alt="Vote" 
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
               referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
           </div>
         )}
@@ -227,7 +262,12 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="space-y-2 flex-1">
               <div className="flex items-center space-x-3">
-                {isEnded ? (
+                {isUpcoming ? (
+                  <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full border border-amber-100">
+                    <Clock size={10} />
+                    <span className="text-[8px] font-black uppercase tracking-widest">Upcoming</span>
+                  </div>
+                ) : isEnded ? (
                   <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-red-50 text-red-600 rounded-full border border-red-100">
                     <span className="text-[8px] font-black uppercase tracking-widest">Ended</span>
                   </div>
@@ -266,7 +306,15 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            {timeLeft && !isEnded && (
+            {isUpcoming && startCountdown && (
+              <div className="flex items-center space-x-2 bg-amber-50 px-4 py-2 rounded-xl border border-amber-100">
+                <Clock size={14} className="text-amber-600" />
+                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">
+                  Starts in: {startCountdown.days}d {startCountdown.hours}h {startCountdown.minutes}m {startCountdown.seconds}s
+                </span>
+              </div>
+            )}
+            {timeLeft && !isEnded && !isUpcoming && (
               <div className="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
                 <Clock size={14} className="text-slate-400" />
                 <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
@@ -293,6 +341,7 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
       <div className="grid grid-cols-1 gap-4">
         {poll.options.map((option, index) => {
           const optionText = typeof option === 'string' ? option : option.text;
+          const optionImage = typeof option === 'string' ? null : option.image;
           const voteCount = poll.votes[index] || 0;
           const isSelected = selected === index;
           const isPending = tempSelected === index;
@@ -314,12 +363,24 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
               {/* Progress bar removed as per request to remove percentage from voting */}
               
               <div className="flex items-center justify-between relative z-10">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all duration-300 ${
                     isSelected || isPending ? 'border-brand-secondary bg-brand-secondary' : 'border-slate-200'
                   }`}>
                     {(isSelected || isPending) && <Check size={14} className="text-white" strokeWidth={4} />}
                   </div>
+                  {optionImage && (
+                    <div className="w-12 h-12 md:w-16 md:h-16 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100 shadow-sm">
+                      <img 
+                        src={optionImage} 
+                        alt={optionText} 
+                        className="w-full h-full object-cover" 
+                        referrerPolicy="no-referrer" 
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </div>
+                  )}
                   <div className="flex flex-col">
                     <span className={`text-base font-black uppercase tracking-tight transition-colors ${isSelected ? 'text-brand-primary' : isPending ? 'text-brand-secondary' : 'text-slate-700'}`}>
                       {optionText}
@@ -340,15 +401,15 @@ const PollCard = React.memo(({ poll }: { poll: Poll }) => {
 
       {!showResults && (
         <button
-          disabled={tempSelected === null || isSubmitting}
-          onClick={() => tempSelected !== null && handleVote()}
+          disabled={tempSelected === null || isSubmitting || isUpcoming}
+          onClick={() => tempSelected !== null && !isUpcoming && handleVote()}
           className={`w-full py-5 rounded-2xl font-black text-xs md:text-sm uppercase tracking-[0.2em] transition-all shadow-xl ${
-            tempSelected === null || isSubmitting
+            tempSelected === null || isSubmitting || isUpcoming
               ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
               : 'bg-brand-primary text-white hover:bg-brand-secondary active:scale-95'
           }`}
         >
-          {isSubmitting ? 'Casting Vote...' : 'Submit Vote'}
+          {isUpcoming ? 'Voting Not Started' : isSubmitting ? 'Casting Vote...' : 'Submit Vote'}
         </button>
       )}
     </motion.div>
@@ -370,12 +431,12 @@ const VotePage = () => {
     const fetchData = async () => {
       const { data: pollsData } = await supabase
         .from('polls')
-        .select('id, question, description, image, options, votes, total_votes, likes, expires_at, is_ended, group_id, created_at')
+        .select('id, question, description, image, options, votes, total_votes, likes, expires_at, starts_at, is_ended, group_id, created_at')
         .order('created_at', { ascending: false });
       
       const { data: groupsData } = await supabase
         .from('poll_groups')
-        .select('id, title, description, image, expires_at, created_at')
+        .select('id, title, description, image, expires_at, starts_at, created_at')
         .order('created_at', { ascending: false });
 
       if (pollsData) setPolls(pollsData as Poll[]);
@@ -466,7 +527,7 @@ const VotePage = () => {
             transition={{ delay: 0.2 }}
             className="text-slate-500 text-sm md:text-lg max-w-2xl mx-auto leading-relaxed font-medium"
           >
-            Your voice matters. Participate in trending polls and see what the campus is thinking.
+            Your voice matters. Participate in trending votes and see what the campus is thinking.
           </motion.p>
         </div>
       </div>
@@ -557,9 +618,22 @@ const VotePage = () => {
                         className="bg-white p-8 rounded-[2rem] border border-slate-100 text-left group relative overflow-hidden flex flex-col transition-all hover:border-brand-secondary hover:shadow-xl"
                       >
                         <div className="relative z-10 space-y-4 flex-1">
-                          <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-secondary group-hover:bg-brand-secondary group-hover:text-white transition-all">
-                            <BarChart3 size={24} />
-                          </div>
+                          {group.image ? (
+                            <div className="w-full h-32 md:h-40 rounded-2xl overflow-hidden border border-slate-100 shadow-inner mb-4 bg-slate-50">
+                              <img 
+                                src={group.image} 
+                                alt={group.title} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                referrerPolicy="no-referrer" 
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-secondary group-hover:bg-brand-secondary group-hover:text-white transition-all">
+                              <BarChart3 size={24} />
+                            </div>
+                          )}
                           <div className="space-y-2">
                             <h3 className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter uppercase">{group.title}</h3>
                             <p className="text-slate-500 text-sm line-clamp-2 font-medium">{group.description}</p>
@@ -568,10 +642,19 @@ const VotePage = () => {
                         
                         <div className="relative z-10 flex items-center justify-between pt-6 mt-6 border-t border-slate-50">
                           <div className="flex items-center space-x-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                              {polls.filter(p => p.group_id === group.id).length} Active Polls
-                            </span>
+                            {group.starts_at && isAfter(new Date(group.starts_at), new Date()) ? (
+                              <>
+                                <Clock size={12} className="text-amber-500" />
+                                <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Upcoming</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                                  {polls.filter(p => p.group_id === group.id).length} Active Votes
+                                </span>
+                              </>
+                            )}
                           </div>
                           <div className="flex items-center space-x-1 text-brand-secondary font-black text-[10px] uppercase tracking-widest group-hover:translate-x-2 transition-transform">
                             <span>Explore</span>
@@ -604,7 +687,7 @@ const VotePage = () => {
                   ) : (
                     <div className="text-center py-24 bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
                       <BarChart3 size={48} className="mx-auto text-slate-200 mb-4" />
-                      <p className="text-slate-400 text-sm font-black uppercase tracking-widest">No trending polls at the moment.</p>
+                      <p className="text-slate-400 text-sm font-black uppercase tracking-widest">No trending votes at the moment.</p>
                     </div>
                   )}
                 </div>

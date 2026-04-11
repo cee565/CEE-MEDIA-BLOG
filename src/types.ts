@@ -11,6 +11,7 @@ export interface Poll {
   votes: Record<string, number>; // optionIndex -> count
   total_votes: number;
   created_at: string;
+  starts_at?: string;
   image?: string;
   likes?: number;
   is_ended?: boolean;
@@ -23,6 +24,7 @@ export interface PollGroup {
   title: string;
   description?: string;
   image?: string;
+  starts_at?: string;
   expires_at?: string;
   created_at: string;
   is_ended?: boolean;
@@ -105,4 +107,37 @@ export interface Ad {
   impressions: number;
   clicks: number;
   created_at: string;
+}
+
+export interface Question {
+  id: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer?: string;
+  category: 'Art' | 'Physical Science' | 'Life Science';
+  created_at: string;
+}
+
+export interface Token {
+  id: string;
+  token: string;
+  category: 'Art' | 'Physical Science' | 'Life Science';
+  participant_name: string;
+  department?: string;
+  is_used: boolean;
+  used_at?: string;
+  created_at: string;
+}
+
+export interface Submission {
+  id: string;
+  token_id: string;
+  score: number;
+  answers: Record<string, string>;
+  time_taken: number;
+  submitted_at: string;
+  tokens?: Token; // For joins
 }
