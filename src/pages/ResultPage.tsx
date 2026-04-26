@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Trophy, Home, BarChart3, CheckCircle2 } from 'lucide-react';
+import { Trophy, Home, BarChart3, CheckCircle2, RefreshCw } from 'lucide-react';
 import Logo from '../components/Logo';
 
 const ResultPage: React.FC = () => {
   const navigate = useNavigate();
   const score = sessionStorage.getItem('exam_score');
   const total = sessionStorage.getItem('exam_total_questions');
-  const name = sessionStorage.getItem('participant_name');
+  const name = sessionStorage.getItem('full_name');
 
   useEffect(() => {
     if (score === null) {
@@ -86,6 +86,20 @@ const ResultPage: React.FC = () => {
                 <BarChart3 size={20} />
               </div>
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Leaderboard</span>
+            </button>
+            <button
+              onClick={() => {
+                if (window.confirm('This will clear your session and allow for a new registration. Are you sure?')) {
+                  localStorage.clear();
+                  navigate('/mock-exam/register');
+                }
+              }}
+              className="flex flex-col items-center justify-center p-6 rounded-3xl bg-slate-50 border border-slate-100 hover:border-brand-secondary hover:shadow-lg transition-all space-y-3 group col-span-2"
+            >
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-brand-secondary transition-colors shadow-sm">
+                <RefreshCw size={20} />
+              </div>
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Start New Registration</span>
             </button>
           </div>
         </div>

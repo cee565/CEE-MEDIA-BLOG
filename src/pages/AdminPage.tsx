@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Logo } from '../components/Logo';
-import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup } from '../types';
-import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff, Trophy } from 'lucide-react';
+import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup, Blog, CommissionPost } from '../types';
+import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff, Trophy, Heart } from 'lucide-react';
 import { format, addHours, addDays, isAfter } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie, AreaChart, Area } from 'recharts';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import EditModal from '../components/EditModal';
 
@@ -19,7 +19,9 @@ const AdminDashboard = () => {
   const [ads, setAds] = useState<Ad[]>([]);
   const [messageComments, setMessageComments] = useState<any[]>([]);
   const [postComments, setPostComments] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'poll_groups' | 'polls' | 'posts' | 'messages' | 'team' | 'ads' | 'comments' | 'blog_comments'>('overview');
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [commissionPosts, setCommissionPosts] = useState<CommissionPost[]>([]);
+  const [activeTab, setActiveTab] = useState<'overview' | 'poll_groups' | 'polls' | 'posts' | 'blogs' | 'messages' | 'team' | 'ads' | 'comments' | 'blog_comments' | 'commission_votes'>('overview');
 
   // Modal states
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -31,6 +33,8 @@ const AdminDashboard = () => {
   const [newPollGroup, setNewPollGroup] = useState({ title: '', description: '', image: null as File | null, duration: 'never', custom_expires_at: '', starts_at: '' });
   const [newPoll, setNewPoll] = useState({ question: '', description: '', group_id: '', options: [{ text: '', image: null as File | null }, { text: '', image: null as File | null }], image: null as File | null, duration: 'never', custom_expires_at: '', starts_at: '' });
   const [newPost, setNewPost] = useState({ title: '', author: '', content: '', image: null as File | null, author_id: '', category: 'Gist', url: '' });
+  const [newBlog, setNewBlog] = useState({ title: '', author: '', content: '', image: null as File | null });
+  const [newCommissionPost, setNewCommissionPost] = useState({ title: '', image: null as File | null, start_time: '', end_time: '' });
   const [newMessage, setNewMessage] = useState({ content: '', url: '' });
   const [newTeamMember, setNewTeamMember] = useState({ name: '', role: '', image: null as File | null, bio: '', url: '' });
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -253,6 +257,14 @@ const AdminDashboard = () => {
       // Fetch post comments
       const { data: postCommentsData } = await supabase.from('post_comments').select('*').order('created_at', { ascending: false });
       if (postCommentsData) setPostComments(postCommentsData);
+
+      // Fetch blogs
+      const { data: blogsData } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+      if (blogsData) setBlogs(blogsData as Blog[]);
+
+      // Fetch commission posts
+      const { data: commissionPostsData } = await supabase.from('commission_posts').select('*').order('created_at', { ascending: false });
+      if (commissionPostsData) setCommissionPosts(commissionPostsData as CommissionPost[]);
     } catch (e) {
       console.error("Admin data fetch failed", e);
     }
@@ -263,7 +275,7 @@ const AdminDashboard = () => {
     checkPing();
 
     // Real-time subscriptions
-    const tables = ['poll_groups', 'polls', 'posts', 'messages', 'analytics', 'team', 'message_comments', 'post_comments', 'ads'];
+    const tables = ['poll_groups', 'polls', 'posts', 'blogs', 'commission_posts', 'messages', 'analytics', 'team', 'message_comments', 'post_comments', 'ads'];
     const channels = tables.map(table => {
       return supabase.channel(`${table}_admin_channel`)
         .on('postgres_changes' as any, { event: '*', schema: 'public', table }, (payload: any) => {
@@ -271,11 +283,13 @@ const AdminDashboard = () => {
             if (payload.new) setAnalytics(payload.new as Analytics);
             return;
           }
-
+          
           const setter = {
             poll_groups: setPollGroups,
             polls: setPolls,
             posts: setPosts,
+            blogs: setBlogs,
+            commission_posts: setCommissionPosts,
             messages: setMessages,
             team: setTeam,
             ads: setAds,
@@ -632,6 +646,69 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleCreateBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBlog.title || !newBlog.content) {
+      showNotification("Title and Content are required", "error");
+      return;
+    }
+
+    try {
+      let imageUrl = '';
+      if (newBlog.image) {
+        imageUrl = await uploadMedia(newBlog.image);
+      }
+
+      const { data, error } = await supabase.from('blogs').insert({
+        title: newBlog.title,
+        author: newBlog.author || 'Admin',
+        content: newBlog.content,
+        image_url: imageUrl
+      }).select().single();
+
+      if (error) throw error;
+      
+      if (data) setBlogs(prev => [data as Blog, ...prev]);
+      showNotification("Blog post created successfully", "success");
+      setNewBlog({ title: '', author: '', content: '', image: null });
+    } catch (e: any) {
+      console.error("Blog creation failed", e);
+      showNotification(`Failed to create blog: ${e.message}`, "error");
+    }
+  };
+
+  const handleCreateCommissionPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCommissionPost.title || !newCommissionPost.start_time || !newCommissionPost.end_time) {
+      showNotification("Title, Start Time, and End Time are required", "error");
+      return;
+    }
+
+    try {
+      let imageUrl = '';
+      if (newCommissionPost.image) {
+        imageUrl = await uploadMedia(newCommissionPost.image);
+      }
+
+      const { data, error } = await supabase.from('commission_posts').insert({
+        title: newCommissionPost.title,
+        image_url: imageUrl,
+        start_time: new Date(newCommissionPost.start_time).toISOString(),
+        end_time: new Date(newCommissionPost.end_time).toISOString(),
+        status: 'upcoming'
+      }).select().single();
+
+      if (error) throw error;
+      
+      if (data) setCommissionPosts(prev => [data as CommissionPost, ...prev]);
+      showNotification("Commission vote created successfully", "success");
+      setNewCommissionPost({ title: '', image: null, start_time: '', end_time: '' });
+    } catch (e: any) {
+      console.error("Commission post creation failed", e);
+      showNotification(`Failed to create commission vote: ${e.message}`, "error");
+    }
+  };
+
   const handleCreateTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTeamMember.name || !newTeamMember.role) {
@@ -890,11 +967,14 @@ const AdminDashboard = () => {
       else if (table === 'messages') item = messages.find(i => i.id === id);
       else if (table === 'team') item = team.find(i => i.id === id);
       else if (table === 'ads') item = ads.find(i => i.id === id);
+      else if (table === 'blogs') item = blogs.find(i => i.id === id);
+      else if (table === 'commission_posts') item = commissionPosts.find(i => i.id === id);
 
       // Collect all media URLs to delete from storage
       const urlsToDelete: string[] = [];
       if (item) {
         if (item.image) urlsToDelete.push(item.image);
+        if (item.image_url) urlsToDelete.push(item.image_url);
         if (item.media_url) urlsToDelete.push(item.media_url);
         if (item.options && Array.isArray(item.options)) {
           item.options.forEach((opt: any) => {
@@ -1003,7 +1083,7 @@ const AdminDashboard = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveEdit}
-        title={`Edit ${editingItem?.table.slice(0, -1)}`}
+        title={`Edit ${editingItem?.table?.slice(0, -1) || 'Item'}`}
         initialData={editingItem?.data || {}}
         type={
           editingItem?.table === 'polls' ? 'poll' : 
@@ -1055,7 +1135,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         <div className="flex bg-slate-50 p-1.5 rounded-2xl overflow-x-auto hide-scrollbar border border-slate-100">
-          {(['overview', 'poll_groups', 'polls', 'posts', 'messages', 'team', 'ads', 'comments', 'blog_comments'] as const).map((tab) => (
+          {(['overview', 'poll_groups', 'polls', 'posts', 'blogs', 'messages', 'team', 'ads', 'comments', 'blog_comments', 'commission_votes'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1070,7 +1150,7 @@ const AdminDashboard = () => {
           ))}
           {/* Mock Exam Admin Link */}
           <button
-            onClick={() => window.location.href = '/quiz/admin'}
+            onClick={() => window.open('/mock-exam/admin', '_blank')}
             className="ml-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap bg-brand-accent text-brand-primary shadow-md hover:bg-brand-focus flex items-center space-x-2"
           >
             <Trophy size={14} />
@@ -1875,6 +1955,175 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
             </div>
             <p className="text-2xl font-black text-slate-800">{messageComments.length + postComments.length}</p>
           </div>
+
+          {/* New Analytics Content */}
+          <div className="col-span-full grid grid-cols-1 lg:grid-cols-3 gap-6 pt-8">
+            {/* Daily Visitor Trends */}
+            <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tighter">Visitor Trends</h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Last 7 Days Engagement</p>
+                </div>
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                  <TrendingUp size={20} />
+                </div>
+              </div>
+              
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart 
+                    data={analytics?.daily_visitors 
+                      ? Object.entries(analytics.daily_visitors)
+                          .map(([date, count]) => ({ date: format(new Date(date), 'MMM d'), count }))
+                          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                          .slice(-7)
+                      : []
+                    }
+                  >
+                    <defs>
+                      <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis 
+                      dataKey="date" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} 
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        borderRadius: '16px', 
+                        border: 'none', 
+                        boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                        padding: '12px'
+                      }}
+                      labelStyle={{ fontWeight: 800, marginBottom: '4px', fontSize: '10px', color: '#64748b' }}
+                      itemStyle={{ fontWeight: 900, fontSize: '14px', color: '#0f172a' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke="#3b82f6" 
+                      strokeWidth={3}
+                      fillOpacity={1} 
+                      fill="url(#colorVisitors)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Engagement Quick Stats */}
+            <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white space-y-8 flex flex-col justify-center">
+              <div>
+                <h3 className="text-xl font-black tracking-tighter mb-1">Engagement Core</h3>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Platform Interaction Depth</p>
+              </div>
+
+              <div className="space-y-6">
+                {[
+                  { label: "Votes/Visitor", value: ((polls.reduce((acc, p) => acc + (p.total_votes || 0), 0)) / (analytics?.total_visitors || 1)).toFixed(2), icon: BarChart3, color: "text-blue-400" },
+                  { label: "Avg Post Likes", value: (posts.reduce((acc, p) => acc + (p.likes || 0), 0) / (posts.length || 1)).toFixed(1), icon: Heart, color: "text-pink-400" },
+                  { label: "Comments Rate", value: (((messageComments.length + postComments.length) / (posts.length + messages.length || 1)) * 100).toFixed(0) + "%", icon: MessageSquare, color: "text-amber-400" }
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 rounded-lg bg-white/5 ${stat.color}`}>
+                        <stat.icon size={16} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{stat.label}</span>
+                    </div>
+                    <span className="text-lg font-black">{stat.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-6 border-t border-white/5 mt-auto">
+                <p className="text-[10px] text-slate-500 font-bold uppercase leading-relaxed">
+                  Overall user retention is calculated based on daily returning visitor logic in the analytics engine.
+                </p>
+              </div>
+            </div>
+
+            {/* Top Performing Sections */}
+            <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
+              {/* Top Posts */}
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Trending Posts</h4>
+                  <Trophy size={16} className="text-amber-500" />
+                </div>
+                <div className="space-y-4">
+                  {posts.sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5).map((post, i) => (
+                    <div key={post.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setActiveTab('posts')}>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-600 transition-colors uppercase tracking-tight">{post.title}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{post.likes} Likes • {post.comments_count || 0} Comments</p>
+                      </div>
+                    </div>
+                  ))}
+                  {posts.length === 0 && <p className="text-[10px] text-slate-400 text-center py-4 font-bold uppercase">No data yet</p>}
+                </div>
+              </div>
+
+              {/* Top Polls */}
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Top Polls</h4>
+                  <BarChart3 size={16} className="text-purple-500" />
+                </div>
+                <div className="space-y-4">
+                  {polls.sort((a, b) => (b.total_votes || 0) - (a.total_votes || 0)).slice(0, 5).map((poll, i) => (
+                    <div key={poll.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setActiveTab('polls')}>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-100 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate group-hover:text-purple-600 transition-colors uppercase tracking-tight">{poll.question}</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{poll.total_votes} Votes • {poll.likes || 0} Likes</p>
+                      </div>
+                    </div>
+                  ))}
+                  {polls.length === 0 && <p className="text-[10px] text-slate-400 text-center py-4 font-bold uppercase">No data yet</p>}
+                </div>
+              </div>
+
+              {/* Top Confessions */}
+              <div className="bg-white p-6 rounded-[2rem] border border-slate-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">Top Secrets</h4>
+                  <MessageSquare size={16} className="text-brand-secondary" />
+                </div>
+                <div className="space-y-4">
+                  {messages.filter(m => m.approved).sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 5).map((msg, i) => (
+                    <div key={msg.id} className="flex items-center space-x-3 group cursor-pointer" onClick={() => setActiveTab('messages')}>
+                      <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors uppercase tracking-tight italic">"{msg.content}"</p>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{msg.likes} Likes • {msg.comments_count || 0} Comments</p>
+                      </div>
+                    </div>
+                  ))}
+                  {messages.filter(m => m.approved).length === 0 && <p className="text-[10px] text-slate-400 text-center py-4 font-bold uppercase">No data yet</p>}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2365,6 +2614,224 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
         </div>
       )}
 
+      {activeTab === 'blogs' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+                <BookOpen size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Create New Blog Post</h3>
+            </div>
+            <form onSubmit={handleCreateBlog} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">Blog Title</label>
+                  <input
+                    type="text"
+                    value={newBlog.title}
+                    onChange={(e) => setNewBlog({ ...newBlog, title: e.target.value })}
+                    placeholder="Enter blog title"
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-medium text-slate-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">Author Name</label>
+                  <input
+                    type="text"
+                    value={newBlog.author}
+                    onChange={(e) => setNewBlog({ ...newBlog, author: e.target.value })}
+                    placeholder="Admin"
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-medium text-slate-700"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">Content</label>
+                <textarea
+                  value={newBlog.content}
+                  onChange={(e) => setNewBlog({ ...newBlog, content: e.target.value })}
+                  placeholder="Write your blog content here..."
+                  className="w-full h-48 p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 resize-none font-medium text-slate-700"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">Cover Image</label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex-grow flex items-center justify-center p-4 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-blue-400 cursor-pointer transition-all group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNewBlog({ ...newBlog, image: e.target.files?.[0] || null })}
+                      className="hidden"
+                    />
+                    <div className="flex items-center space-x-2 text-slate-400 group-hover:text-blue-500">
+                      <ImageIcon size={20} />
+                      <span className="text-xs font-black uppercase tracking-widest">
+                        {newBlog.image ? newBlog.image.name : 'Upload Cover Image'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-blue-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-blue-700 transition-all flex items-center justify-center space-x-2"
+              >
+                <Plus size={18} />
+                <span>Publish Blog Post</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {blogs.map((blog) => (
+              <div key={blog.id} className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-3">
+                    {blog.image_url ? (
+                      <img src={blog.image_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
+                        <BookOpen size={20} />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-black text-slate-900 uppercase tracking-tighter line-clamp-1">{blog.title}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">By {blog.author} • {format(new Date(blog.created_at), 'MMM d, yyyy')}</p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => confirmDelete(blog.id, 'blogs')}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 line-clamp-3 font-medium leading-relaxed">{blog.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'commission_votes' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
+            <div className="flex items-center space-x-3 mb-2">
+              <div className="p-2 bg-purple-100 text-purple-600 rounded-xl">
+                <Trophy size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Create New Commission Vote</h3>
+            </div>
+            <form onSubmit={handleCreateCommissionPost} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">Vote Title</label>
+                <input
+                  type="text"
+                  value={newCommissionPost.title}
+                  onChange={(e) => setNewCommissionPost({ ...newCommissionPost, title: e.target.value })}
+                  placeholder="e.g. Best Department 2024"
+                  className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-medium text-slate-700"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">Start Time</label>
+                  <input
+                    type="datetime-local"
+                    value={newCommissionPost.start_time}
+                    onChange={(e) => setNewCommissionPost({ ...newCommissionPost, start_time: e.target.value })}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-medium text-slate-700"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-slate-500 ml-2">End Time</label>
+                  <input
+                    type="datetime-local"
+                    value={newCommissionPost.end_time}
+                    onChange={(e) => setNewCommissionPost({ ...newCommissionPost, end_time: e.target.value })}
+                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-purple-400 font-medium text-slate-700"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-2">Banner Image</label>
+                <div className="flex items-center space-x-4">
+                  <label className="flex-grow flex items-center justify-center p-4 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 hover:border-purple-400 cursor-pointer transition-all group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setNewCommissionPost({ ...newCommissionPost, image: e.target.files?.[0] || null })}
+                      className="hidden"
+                    />
+                    <div className="flex items-center space-x-2 text-slate-400 group-hover:text-purple-500">
+                      <ImageIcon size={20} />
+                      <span className="text-xs font-black uppercase tracking-widest">
+                        {newCommissionPost.image ? newCommissionPost.image.name : 'Upload Banner Image'}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-purple-600 text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-lg hover:bg-purple-700 transition-all flex items-center justify-center space-x-2"
+              >
+                <Plus size={18} />
+                <span>Create Commission Vote</span>
+              </button>
+            </form>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {commissionPosts.map((post) => (
+              <div key={post.id} className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center space-x-3">
+                    {post.image_url ? (
+                      <img src={post.image_url} alt="" className="w-12 h-12 rounded-xl object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
+                        <Trophy size={20} />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-black text-slate-900 uppercase tracking-tighter line-clamp-1">{post.title}</h4>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        {format(new Date(post.start_time), 'MMM d')} - {format(new Date(post.end_time), 'MMM d')}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button 
+                      onClick={() => confirmDelete(post.id, 'commission_posts')}
+                      className="p-2 text-slate-300 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2">
+                  <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                    post.status === 'active' ? 'bg-green-50 text-green-600' : 
+                    post.status === 'upcoming' ? 'bg-blue-50 text-blue-600' : 
+                    'bg-slate-50 text-slate-400'
+                  }`}>
+                    {post.status}
+                  </div>
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {post.votes_count || 0} Votes
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {activeTab === 'messages' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-[2.5rem] card-shadow border border-slate-100 space-y-4">
@@ -2729,11 +3196,11 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
               </div>
             </div>
             {ads.map((ad) => (
-              <div key={ad.id} className={`bg-white p-4 rounded-2xl border ${ad.is_active ? 'border-slate-100' : 'border-red-100 opacity-60'} card-shadow flex justify-between items-center group`}>
+              <div key={ad?.id} className={`bg-white p-4 rounded-2xl border ${ad?.is_active ? 'border-slate-100' : 'border-red-100 opacity-60'} card-shadow flex justify-between items-center group`}>
                 <div className="flex items-center space-x-3">
                   <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-100 shadow-inner relative">
-                    {ad.media_type === 'image' ? (
-                      <img src={ad.media_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
+                    {ad?.media_type === 'image' ? (
+                      <img src={ad?.media_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-slate-800 text-white">
                         <Video size={18} />
@@ -2742,16 +3209,16 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                   </div>
                   <div className="space-y-0.5">
                     <h4 className="font-bold text-slate-800 flex items-center text-sm">
-                      {ad.name}
-                      {!ad.is_active && <span className="ml-2 text-[7px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full uppercase">Inactive</span>}
-                      {ad.expires_at && new Date(ad.expires_at) < new Date() && (
+                      {ad?.name}
+                      {!ad?.is_active && <span className="ml-2 text-[7px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full uppercase">Inactive</span>}
+                      {ad?.expires_at && new Date(ad.expires_at) < new Date() && (
                         <span className="ml-2 text-[7px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full uppercase">Expired</span>
                       )}
                     </h4>
-                    <p className="text-[10px] text-slate-400 line-clamp-1">{ad.link_url}</p>
+                    <p className="text-[10px] text-slate-400 line-clamp-1">{ad?.link_url}</p>
                     <div className="flex items-center space-x-2">
-                      <p className="text-[9px] text-slate-300 uppercase font-bold tracking-widest">{format(new Date(ad.created_at), 'MMM d, yyyy')}</p>
-                      {ad.expires_at && (
+                      <p className="text-[9px] text-slate-300 uppercase font-bold tracking-widest">{ad?.created_at ? format(new Date(ad.created_at), 'MMM d, yyyy') : 'N/A'}</p>
+                      {ad?.expires_at && (
                         <p className="text-[9px] text-orange-400 uppercase font-bold tracking-widest flex items-center">
                           <Clock size={8} className="mr-1" /> Exp: {format(new Date(ad.expires_at), 'MMM d, HH:mm')}
                         </p>
@@ -2762,17 +3229,17 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                     <div className="flex items-center space-x-3 mt-1.5">
                       <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-slate-400 uppercase">Impressions</span>
-                        <span className="text-[10px] font-black text-slate-700">{(ad.impressions || 0).toLocaleString()}</span>
+                        <span className="text-[10px] font-black text-slate-700">{(ad?.impressions || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-slate-400 uppercase">Clicks</span>
-                        <span className="text-[10px] font-black text-slate-700">{(ad.clicks || 0).toLocaleString()}</span>
+                        <span className="text-[10px] font-black text-slate-700">{(ad?.clicks || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex flex-col">
                         <span className="text-[8px] font-bold text-slate-400 uppercase">CTR</span>
                         <span className="text-[10px] font-black text-indigo-600">
-                          {ad.impressions > 0 
-                            ? ((ad.clicks / ad.impressions) * 100).toFixed(2) 
+                          {ad?.impressions > 0 
+                            ? (((ad.clicks || 0) / ad.impressions) * 100).toFixed(2) 
                             : '0.00'}%
                         </span>
                       </div>
@@ -2782,23 +3249,24 @@ CREATE POLICY "Allow All" ON ads FOR ALL USING (true) WITH CHECK (true);`);
                 <div className="flex space-x-1.5">
                   <button 
                     onClick={async () => {
+                      if (!ad?.id) return;
                       const { error } = await supabase.from('ads').update({ is_active: !ad.is_active }).eq('id', ad.id);
                       if (error) showNotification("Failed to toggle status", "error");
                       else showNotification(ad.is_active ? "Ad deactivated" : "Ad activated", "success");
                     }}
-                    className={`p-1.5 rounded-lg transition-colors ${ad.is_active ? 'text-green-500 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-50'}`}
-                    title={ad.is_active ? "Deactivate" : "Activate"}
+                    className={`p-1.5 rounded-lg transition-colors ${ad?.is_active ? 'text-green-500 hover:bg-green-50' : 'text-slate-400 hover:bg-slate-50'}`}
+                    title={ad?.is_active ? "Deactivate" : "Activate"}
                   >
                     <Monitor size={16} />
                   </button>
                   <button 
-                    onClick={() => handleEdit(ad.id, 'ads', { name: ad.name, media_url: ad.media_url, media_type: ad.media_type, link_url: ad.link_url, description: ad.description, is_active: ad.is_active })}
+                    onClick={() => ad?.id && handleEdit(ad.id, 'ads', { name: ad.name, media_url: ad.media_url, media_type: ad.media_type, link_url: ad.link_url, description: ad.description, is_active: ad.is_active })}
                     className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-colors"
                   >
                     <Edit size={16} />
                   </button>
                   <button 
-                    onClick={() => confirmDelete(ad.id, 'ads')} 
+                    onClick={() => ad?.id && confirmDelete(ad.id, 'ads')} 
                     className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />

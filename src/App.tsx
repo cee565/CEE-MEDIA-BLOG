@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { HelmetProvider } from 'react-helmet-async';
 import Logo from './components/Logo';
 import ScrollToTop from './components/ScrollToTop';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 // Pages
 const HomePage = React.lazy(() => import('./pages/HomePage'));
@@ -36,8 +37,9 @@ const Navbar = () => {
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
     { name: 'Write Message', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
-    // { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
+    { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
+    { name: 'Admin', path: '/admin', icon: Shield, prefetch: () => import('./pages/AdminPage') },
   ];
 
   return (
@@ -61,7 +63,16 @@ const Navbar = () => {
                     : 'text-slate-400 hover:text-brand-secondary hover:bg-slate-50/50'
                 }`}
               >
-                <link.icon size={14} strokeWidth={3} />
+                {link.name === 'Admin' ? (
+                  <div className="ml-2 pl-4 border-l border-slate-100 flex items-center">
+                    <div className="px-3 py-1 bg-brand-primary/10 text-brand-primary rounded-full flex items-center space-x-1 animate-pulse">
+                      <Shield size={12} strokeWidth={3} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Portal</span>
+                    </div>
+                  </div>
+                ) : (
+                  <link.icon size={14} strokeWidth={3} />
+                )}
                 <span>{link.name}</span>
                 {location.pathname === link.path && (
                   <motion.div 
@@ -150,8 +161,23 @@ const App = () => {
 
   useEffect(() => {
     if (!isConfigured) return;
-    console.log("CEE MEDIA App Initialized - v1.0.0");
     
+    // Version-based cache reset
+    const APP_VERSION = '2.1.0'; // Major bump to force complete reset and fix persistent registration issues
+    const storedVersion = localStorage.getItem('cee_media_version');
+    if (storedVersion !== APP_VERSION) {
+      // TOTAL WIPE for the new version
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      localStorage.setItem('cee_media_version', APP_VERSION);
+      console.log(`System performing total wipe and update to v${APP_VERSION}`);
+      // Refresh to ensure all states are clean
+      window.location.reload();
+      return;
+    }
+
+    console.log("CEE MEDIA App Initialized - v" + APP_VERSION);
     // Global real-time notifications
     const globalChannel = supabase
       .channel('global_notifications')
@@ -260,6 +286,7 @@ const App = () => {
       <ErrorBoundary>
         <Router>
           <ScrollToTop />
+          <PWAInstallPrompt />
           <div className="min-h-screen flex flex-col pt-16">
             <Navbar />
             <main className="flex-grow min-h-[80vh]">
@@ -307,6 +334,13 @@ const App = () => {
                   <div className="space-y-4 text-center md:text-right">
                     <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
                     <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
+                    <Link 
+                      to="/admin" 
+                      className="inline-flex items-center space-x-2 text-[11px] font-black text-white/60 hover:text-brand-accent transition-all uppercase tracking-[0.2em] pt-6 group border-t border-white/5 w-full mt-2"
+                    >
+                      <Shield size={14} className="group-hover:rotate-12 transition-transform" />
+                      <span>Admin Management Door</span>
+                    </Link>
                   </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-white/5 text-center flex flex-col items-center space-y-4">

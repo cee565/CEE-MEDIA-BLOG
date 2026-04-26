@@ -117,18 +117,24 @@ export interface Question {
   option_c: string;
   option_d: string;
   correct_answer?: string;
-  category: 'Art' | 'Physical Science' | 'Life Science';
+  category: 'Science Courses' | 'Commercial Courses';
   created_at: string;
 }
 
 export interface Token {
   id: string;
   token: string;
-  category: 'Art' | 'Physical Science' | 'Life Science';
-  participant_name: string;
-  department?: string;
-  is_used: boolean;
-  used_at?: string;
+  category: 'Science Courses' | 'Commercial Courses';
+  full_name: string;
+  email_phone: string;
+  matric_number: string;
+  department: string;
+  has_started_exam: boolean;
+  has_submitted: boolean;
+  score: number;
+  start_time?: string;
+  submitted_at?: string;
+  time_used?: number;
   created_at: string;
 }
 
@@ -139,5 +145,50 @@ export interface Submission {
   answers: Record<string, string>;
   time_taken: number;
   submitted_at: string;
-  tokens?: Token; // For joins
+  tokens?: Token; // For legacy joins
+  mock_exam_users?: MockExamUser; // For new joins
+}
+
+export interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  image_url?: string;
+  created_at: string;
+}
+
+export interface CommissionPost {
+  id: string;
+  title: string;
+  image_url?: string;
+  start_time: string;
+  end_time: string;
+  status: 'upcoming' | 'active' | 'ended';
+  created_at: string;
+  votes_count?: number;
+}
+
+export interface CommissionVote {
+  id: string;
+  post_id: string;
+  user_identifier: string;
+  created_at: string;
+}
+
+export interface MockExamUser {
+  id: string;
+  full_name: string;
+  email_phone: string;
+  matric_number: string;
+  department: string;
+  category: 'Science Courses' | 'Commercial Courses';
+  token: string;
+  ip_address?: string;
+  has_started_exam?: boolean;
+  has_submitted?: boolean;
+  start_time?: string;
+  score?: number;
+  answers?: Record<string, string>;
+  created_at: string;
 }

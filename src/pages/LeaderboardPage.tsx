@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../supabase';
 import { Question, Submission, Token } from '../types';
 import { Trophy, Medal, Timer, ArrowLeft, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo';
 
@@ -21,9 +22,9 @@ const LeaderboardPage: React.FC = () => {
         .from('submissions')
         .select(`
           *,
-          tokens (
+          mock_exam_users (
             token,
-            participant_name
+            full_name
           )
         `)
         .order('score', { ascending: false })
@@ -31,7 +32,7 @@ const LeaderboardPage: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      setSubmissions(data as Submission[]);
+      setSubmissions(data as any[]);
     } catch (err) {
       console.error('Failed to fetch leaderboard', err);
     } finally {
@@ -42,8 +43,26 @@ const LeaderboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchLeaderboard();
-    const interval = setInterval(() => fetchLeaderboard(true), 20000); // Auto-refresh every 20s
-    return () => clearInterval(interval);
+    
+    // Subscribe to new submissions
+    const channel = supabase
+      .channel('public:submissions')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'submissions' },
+        () => {
+          fetchLeaderboard(true);
+          toast.info('Leaderboard updated with new result', {
+            icon: <Trophy className="text-brand-accent" size={14} />,
+            duration: 2000
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const formatTime = (seconds: number) => {
@@ -132,10 +151,10 @@ const LeaderboardPage: React.FC = () => {
                           <td className="px-8 py-6">
                             <div className="flex flex-col">
                               <span className="font-black text-slate-900 uppercase tracking-tight text-sm">
-                                {sub.tokens?.participant_name || 'Anonymous'}
+                                {(sub as any).mock_exam_users?.full_name || 'Anonymous'}
                               </span>
                               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-mono">
-                                Token: {sub.tokens?.token}
+                                Token: {(sub as any).mock_exam_users?.token}
                               </span>
                             </div>
                           </td>

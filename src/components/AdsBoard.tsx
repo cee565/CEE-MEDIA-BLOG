@@ -110,17 +110,19 @@ const AdsBoard: React.FC = React.memo(() => {
 
   if (loading || ads.length === 0) return null;
 
-  const currentAd = ads[currentIndex];
+  const currentAd = ads[currentIndex] || ads[0];
+
+  if (!currentAd) return null;
 
   const AdContent = (
     <div className="flex flex-col h-full bg-white">
       {/* Media Container */}
       <div className="relative h-[200px] md:h-[350px] bg-slate-950 flex items-center justify-center overflow-hidden">
-        {currentAd.media_type === 'video' ? (
+        {currentAd?.media_type === 'video' ? (
           <video
-            key={currentAd.id}
+            key={currentAd?.id}
             ref={videoRef}
-            src={currentAd.media_url}
+            src={currentAd?.media_url}
             autoPlay
             muted={isMuted}
             onEnded={nextAd}
@@ -148,8 +150,8 @@ const AdsBoard: React.FC = React.memo(() => {
           />
         ) : (
           <img
-            src={currentAd.media_url}
-            alt={currentAd.name}
+            src={currentAd?.media_url}
+            alt={currentAd?.name}
             className="max-w-full max-h-full object-contain"
             referrerPolicy="no-referrer"
             loading="eager"
@@ -158,7 +160,7 @@ const AdsBoard: React.FC = React.memo(() => {
         )}
         
         {/* Buffering Indicator */}
-        {isBuffering && currentAd.media_type === 'video' && (
+        {isBuffering && currentAd?.media_type === 'video' && (
           <div className="absolute inset-0 flex items-center justify-center z-20">
             <div className="w-10 h-10 border-4 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
           </div>
@@ -175,13 +177,13 @@ const AdsBoard: React.FC = React.memo(() => {
       <div className="flex-grow p-4 md:p-5 flex flex-col min-h-0 bg-white">
         <div className="flex-grow overflow-hidden flex flex-col space-y-1">
           <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight leading-tight uppercase truncate">
-            {currentAd.name}
+            {currentAd?.name}
           </h3>
           
-          {currentAd.description && (
+          {currentAd?.description && (
             <div className="flex-grow max-h-[60px] md:max-h-[100px] overflow-y-auto custom-scrollbar pr-2 touch-pan-y">
               <p className="text-[10px] md:text-xs text-slate-500 font-medium leading-relaxed">
-                {currentAd.description}
+                {currentAd?.description}
               </p>
             </div>
           )}
@@ -189,7 +191,7 @@ const AdsBoard: React.FC = React.memo(() => {
 
         {/* CTA Section */}
         <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-          {currentAd.link_url && (
+          {currentAd?.link_url && (
             <div className="inline-flex items-center space-x-2 bg-brand-primary text-white px-5 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.1em] shadow-md hover:bg-brand-secondary transition-all group/btn cursor-pointer">
               <span>Learn More</span>
               <ExternalLink size={12} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
@@ -215,20 +217,20 @@ const AdsBoard: React.FC = React.memo(() => {
       <div className="max-w-7xl mx-auto relative h-[400px] md:h-[550px] rounded-[2rem] overflow-hidden shadow-xl border border-slate-200 bg-white">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentAd.id}
+            key={currentAd?.id || 'empty-ad'}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
             className="absolute inset-0 flex flex-col will-change-[transform,opacity]"
           >
-            {currentAd.link_url ? (
+            {currentAd?.link_url ? (
               <a 
-                href={currentAd.link_url.startsWith('http') ? currentAd.link_url : `https://${currentAd.link_url}`} 
+                href={currentAd?.link_url?.startsWith('http') ? currentAd.link_url : `https://${currentAd?.link_url}`} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="relative h-full w-full block"
-                onClick={() => recordClick(currentAd.id)}
+                onClick={() => currentAd?.id && recordClick(currentAd.id)}
               >
                 {AdContent}
               </a>
@@ -243,14 +245,14 @@ const AdsBoard: React.FC = React.memo(() => {
         {/* Progress Bar (Top) */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-slate-100 z-20">
           <AnimatePresence mode="wait">
-            {(currentAd.media_type === 'image' || isMetadataLoaded) && (
+            {(currentAd?.media_type === 'image' || isMetadataLoaded) && (
               <motion.div
                 key={`${currentIndex}-${isMetadataLoaded}`}
                 initial={{ width: "0%" }}
                 animate={{ width: "100%" }}
                 exit={{ opacity: 0 }}
                 transition={{ 
-                  duration: currentAd.media_type === 'video' ? videoDuration : 5, 
+                  duration: currentAd?.media_type === 'video' ? videoDuration : 5, 
                   ease: "linear" 
                 }}
                 className="h-full bg-brand-accent"
@@ -260,7 +262,7 @@ const AdsBoard: React.FC = React.memo(() => {
         </div>
 
         {/* Video Controls */}
-        {currentAd.media_type === 'video' && (
+        {currentAd?.media_type === 'video' && (
           <button
             onClick={(e) => {
               e.preventDefault();

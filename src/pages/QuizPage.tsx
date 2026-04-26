@@ -6,25 +6,21 @@ import { Question } from '../types';
 import { toast } from 'sonner';
 import { Timer, Send, ChevronRight, AlertTriangle, ShieldAlert, Zap } from 'lucide-react';
 
-const EXAM_DURATION = 20 * 60; // 20 minutes in seconds
-
 const MockExamPage: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    const saved = localStorage.getItem('exam_time_left');
-    return saved ? parseInt(saved) : EXAM_DURATION;
-  });
+  const [examDuration, setExamDuration] = useState<number>(20 * 60);
+  const [timeLeft, setTimeLeft] = useState<number>(20 * 60);
   const [loading, setLoading] = useState(true);
   const [staggering, setStaggering] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   
-  const tokenId = sessionStorage.getItem('exam_token_id');
-  const token = sessionStorage.getItem('exam_token');
-  const category = sessionStorage.getItem('exam_category');
-  const participantName = sessionStorage.getItem('participant_name');
+  const tokenId = localStorage.getItem('exam_token_id');
+  const token = localStorage.getItem('exam_token');
+  const category = localStorage.getItem('exam_category');
+  const fullName = localStorage.getItem('full_name');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const isSubmittingRef = useRef(false);
@@ -40,40 +36,68 @@ const MockExamPage: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Anti-cheat: Detect refresh/close -> Auto-submit
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isSubmittingRef.current) {
-        // Auto-submit on refresh is requested
-        submitExam(timeLeft);
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [timeLeft]);
-
   const submitExam = useCallback(async (finalTimeLeft?: number) => {
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     setSubmitting(true);
 
-    const timeTaken = EXAM_DURATION - (finalTimeLeft ?? timeLeft);
+    const currentTimeLeft = finalTimeLeft ?? timeLeft;
+    const timeTaken = examDuration - currentTimeLeft;
     
     try {
-      const { data: score, error } = await supabase.rpc('submit_mock_exam_securely', {
-        p_token_id: tokenId,
-        p_answers: answers,
-        p_time_taken: timeTaken
+      // Calculate score client-side if RPC is missing
+      let score = 0;
+      questions.forEach(q => {
+        if (answers[q.id] === q.correct_answer) {
+          score++;
+        }
       });
 
-      if (error) throw error;
+      // 1. Update mock_exam_users
+      const { error: userError } = await supabase
+        .from('mock_exam_users')
+        .update({ 
+          has_submitted: true, 
+          score: score,
+          answers: answers
+        })
+        .eq('id', tokenId);
 
-      // Clear session and local storage
-      localStorage.removeItem('exam_time_left');
+      if (userError) {
+        if (userError.code === 'PGRST116' || userError.message?.includes('not found')) {
+          console.warn('Session expired or token deleted');
+          localStorage.clear();
+          navigate('/mock-exam/register');
+          return;
+        }
+        throw userError;
+      }
+
+      // 2. Insert into submissions table
+      const { error: subError } = await supabase
+        .from('submissions')
+        .insert({
+          token_id: tokenId,
+          score: score,
+          answers: answers,
+          time_taken: timeTaken,
+          submitted_at: new Date().toISOString()
+        });
+
+      // Ignore subError if it's just a permission issue on submissions table, 
+      // as long as mock_exam_users is updated.
+      if (subError) console.warn('Submissions table insert failed', subError);
+
+      // Clear exam session info
+      localStorage.removeItem('exam_token_id');
+      localStorage.removeItem('exam_token');
+      localStorage.removeItem('exam_category');
+      localStorage.removeItem('full_name');
+      localStorage.removeItem('ceemedia_exam_token'); // Clear registration token too
+
       sessionStorage.setItem('exam_score', score.toString());
       sessionStorage.setItem('exam_total_questions', questions.length.toString());
+      sessionStorage.setItem('full_name', fullName || 'Student');
       
       navigate('/mock-exam/result');
     } catch (err) {
@@ -82,7 +106,26 @@ const MockExamPage: React.FC = () => {
       isSubmittingRef.current = false;
       setSubmitting(false);
     }
-  }, [answers, questions.length, tokenId, timeLeft, navigate]);
+  }, [answers, questions, tokenId, timeLeft, navigate, fullName]);
+
+  // Auto-save answers to database
+  useEffect(() => {
+    if (loading || staggering || Object.keys(answers).length === 0) return;
+
+    const saveAnswers = async () => {
+      try {
+        await supabase
+          .from('mock_exam_users')
+          .update({ answers: answers })
+          .eq('id', tokenId);
+      } catch (err) {
+        console.error('Auto-save failed', err);
+      }
+    };
+
+    const debounce = setTimeout(saveAnswers, 2000);
+    return () => clearTimeout(debounce);
+  }, [answers, tokenId, loading, staggering]);
 
   // Timer logic
   useEffect(() => {
@@ -91,7 +134,6 @@ const MockExamPage: React.FC = () => {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         const next = prev - 1;
-        localStorage.setItem('exam_time_left', next.toString());
         if (next <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
           submitExam(0);
@@ -115,28 +157,113 @@ const MockExamPage: React.FC = () => {
     const startExamSequence = async () => {
       setLoading(true);
       try {
-        // 1. Fetch all questions once
-        const { data, error } = await supabase
+        // 0. Fetch global config
+        const { data: configData } = await supabase
+          .from('quiz_config')
+          .select('*')
+          .eq('id', 'global_config')
+          .maybeSingle();
+        
+        let activeDuration = 20 * 60; // default 20 mins
+        if (configData && configData.duration) {
+          activeDuration = configData.duration * 60;
+        } else {
+          const local = localStorage.getItem('quiz_duration');
+          if (local) activeDuration = parseInt(local) * 60;
+        }
+        setExamDuration(activeDuration);
+
+        // 1. Fetch token info to check start_time and previous answers
+        const { data: tokenData, error: tokenError } = await supabase
+          .from('mock_exam_users')
+          .select('*')
+          .eq('id', tokenId)
+          .single();
+
+        if (tokenError) {
+          console.warn('Token invalid or deleted, clearing session');
+          localStorage.removeItem('exam_token_id');
+          localStorage.removeItem('exam_token');
+          localStorage.removeItem('exam_category');
+          localStorage.removeItem('full_name');
+          navigate('/mock-exam/entry');
+          return;
+        }
+
+        if (tokenData.has_submitted) {
+          navigate('/mock-exam/result');
+          return;
+        }
+
+        // Calculate remaining time based on start_time
+        let remaining = activeDuration;
+        
+        if (tokenData.start_time) {
+          const startTime = new Date(tokenData.start_time).getTime();
+          const now = new Date().getTime();
+          const elapsedSeconds = Math.floor((now - startTime) / 1000);
+          remaining = activeDuration - elapsedSeconds;
+        } else {
+          // If for some reason start_time is missing, initialize it
+          await supabase
+            .from('mock_exam_users')
+            .update({ start_time: new Date().toISOString() })
+            .eq('id', tokenId);
+        }
+
+        if (remaining <= 0) {
+          console.warn('Exam time expired based on start_time', { remaining, startTime: tokenData.start_time });
+          toast.error('Your exam time has expired.');
+          submitExam(0);
+          return;
+        }
+
+        setTimeLeft(remaining);
+        if (tokenData.answers) {
+          setAnswers(tokenData.answers);
+        }
+
+        // 2. Fetch questions
+        let activeCategory = category;
+        if (!activeCategory || activeCategory === 'undefined') {
+          console.warn('No category found in localStorage, recovering from tokenData:', tokenData.category);
+          activeCategory = tokenData.category;
+          if (activeCategory) localStorage.setItem('exam_category', activeCategory);
+        }
+
+        // Force match the database category values
+        const dbCategory = activeCategory === 'Science Courses' ? 'Science Courses' : 'Commercial Courses';
+        
+        console.log('Fetching questions for category:', dbCategory);
+        const { data: qData, error: qError } = await supabase
           .from('questions')
-          .select('id, question, option_a, option_b, option_c, option_d, category')
-          .eq('category', category)
-          .order('created_at', { ascending: true });
+          .select('*')
+          .eq('category', dbCategory);
 
-        if (error) throw error;
-        setQuestions(data as Question[]);
+        if (qError) {
+          console.error('Questions fetch error:', qError);
+          throw new Error('FAILED_TO_LOAD_QUESTIONS');
+        }
+
+        if (!qData || qData.length === 0) {
+          console.warn('No questions found in database for these categories');
+          throw new Error('NO_QUESTIONS_FOUND');
+        }
+
+        setQuestions(qData as Question[]);
         setLoading(false);
-
-        // 2. Traffic Control: Random stagger delay (1-5 seconds)
-        setStaggering(true);
-        const delay = Math.floor(Math.random() * 4000) + 1000;
-        setTimeout(() => {
-          setStaggering(false);
-        }, delay);
-
-      } catch (err) {
+        console.log('Questions loaded successfully:', qData.length);
+      } catch (err: any) {
         console.error('Failed to start exam', err);
-        toast.error('Failed to load exam content');
         setLoading(false);
+        
+        if (err.message === 'FAILED_TO_LOAD_QUESTIONS') {
+          toast.error('Failed to load exam questions. Retrying...');
+        } else if (err.message === 'NO_QUESTIONS_FOUND') {
+          toast.error('No questions found for your category.');
+        } else {
+          toast.error('An unexpected error occurred while loading the exam.');
+        }
       }
     };
 
