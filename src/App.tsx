@@ -25,6 +25,7 @@ const QuizPage = React.lazy(() => import('./pages/QuizPage'));
 const ResultPage = React.lazy(() => import('./pages/ResultPage'));
 const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage'));
 const RegistrationPage = React.lazy(() => import('./pages/RegistrationPage'));
+const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,7 +36,7 @@ const Navbar = () => {
     { name: 'Vote', path: '/vote', icon: Vote, prefetch: () => import('./pages/VotePage') },
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
-    { name: 'Drop Gist', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
+    { name: 'Drip Gists', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
     { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
   ];
@@ -146,6 +147,7 @@ const AnimatedRoutes = () => {
           <Route path="/mock-exam/start" element={<QuizPage />} />
           <Route path="/mock-exam/result" element={<ResultPage />} />
           <Route path="/mock-exam/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/mock-exam/admin" element={<AdminPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -159,18 +161,19 @@ const App = () => {
     if (!isConfigured) return;
     
     // Version-based cache reset
-    const APP_VERSION = '2.1.1'; // Force reset after build fixes
+    const APP_VERSION = '2.3.0'; // Updated to 2.3.0 for Drip Gists & Route Fixes
     const storedVersion = localStorage.getItem('cee_media_version');
-    if (storedVersion !== APP_VERSION) {
-      // TOTAL WIPE for the new version
+    if (storedVersion && storedVersion !== APP_VERSION) {
+      // ONLY clear if there's a stored version but it's old
+      // This prevents unnecessary clears for first-time users
       localStorage.clear();
       sessionStorage.clear();
       
       localStorage.setItem('cee_media_version', APP_VERSION);
-      console.log(`System performing total wipe and update to v${APP_VERSION}`);
-      // Refresh to ensure all states are clean
       window.location.reload();
       return;
+    } else if (!storedVersion) {
+      localStorage.setItem('cee_media_version', APP_VERSION);
     }
 
     console.log("CEE MEDIA App Initialized - v" + APP_VERSION);
@@ -330,6 +333,7 @@ const App = () => {
                   <div className="space-y-4 text-center md:text-right">
                     <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
                     <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
+                    <Link to="/mock-exam/admin" className="text-[9px] font-black text-slate-700 uppercase tracking-widest hover:text-white transition-colors block mt-2">Admin Portal</Link>
                   </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-white/5 text-center flex flex-col items-center space-y-4">

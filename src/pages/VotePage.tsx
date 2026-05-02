@@ -77,7 +77,7 @@ const VoteCard = React.memo(({ post, onVote }: { post: CommissionPost, onVote: (
     }
   };
 
-  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/vote?id=${post.id}`;
+  const shareUrl = `${window.location.origin}/api/vote/${post.id}`;
   
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -203,7 +203,10 @@ const VotePage = () => {
   const [posts, setPosts] = useState<CommissionPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams] = useSearchParams();
+  const [individualPost, setIndividualPost] = useState<CommissionPost | null>(null);
   const postId = searchParams.get('id');
+
+  const sharedPost = postId ? (posts.find(p => p.id === postId) || individualPost) : null;
 
   const fetchPosts = async () => {
     try {
@@ -291,7 +294,31 @@ const VotePage = () => {
   };
 
   useEffect(() => {
-    fetchPosts();
+    const init = async () => {
+      setLoading(true);
+      if (postId) {
+        try {
+          const { data, error } = await supabase
+            .from('commission_posts')
+            .select('*')
+            .eq('id', postId)
+            .maybeSingle();
+          if (data) {
+            // Fetch vote count for this individual post
+            const { count } = await supabase
+              .from('votes')
+              .select('*', { count: 'exact', head: true })
+              .eq('post_id', data.id);
+            setIndividualPost({ ...data, votes_count: count || 0 });
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      await fetchPosts();
+    };
+
+    init();
     
     // Real-time updates
     const channel = supabase
@@ -304,13 +331,11 @@ const VotePage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [postId]);
 
   const activePosts = posts.filter(p => p.status === 'active');
   const upcomingPosts = posts.filter(p => p.status === 'upcoming');
   const endedPosts = posts.filter(p => p.status === 'ended');
-
-  const sharedPost = postId ? posts.find(p => p.id === postId) : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">

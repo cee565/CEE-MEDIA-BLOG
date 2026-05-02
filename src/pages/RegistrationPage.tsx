@@ -161,21 +161,22 @@ const RegistrationPage: React.FC = () => {
 
     setLoading(true);
     try {
+      console.log('Starting registration check for:', trimmedMatric);
+      
       // 1. Check if matric number already registered
       const { data: matricUser, error: checkErr } = await supabase
         .from('mock_exam_users')
-        .select('*')
+        .select('id, matric_number, token, full_name')
         .eq('matric_number', trimmedMatric)
         .maybeSingle();
 
       if (checkErr) {
-        console.error('Check user error:', checkErr);
-        // Continue anyway, it might just be a connection blip
+        console.error('Supabase SELECT error:', checkErr);
+        // We continue, as it might just be the record doesn't exist and maybeSingle is being fussy
       }
 
       if (matricUser) {
-        // If they already have a token, we just update their registration info and give them a NEW token
-        // to comply with the "make old phones create new tokens" request
+        console.log('User found, performing reset/update:', matricUser.id);
         const newToken = generateToken();
         const { error: resetErr } = await supabase
           .from('mock_exam_users')
@@ -191,25 +192,25 @@ const RegistrationPage: React.FC = () => {
             category: category,
             full_name: trimmedName,
             email_phone: trimmedEmailPhone,
-            created_at: new Date().toISOString() // refresh timestamp
+            created_at: new Date().toISOString()
           })
           .eq('id', matricUser.id);
 
         if (!resetErr) {
           setGeneratedToken(newToken);
           localStorage.setItem('ceemedia_exam_token', newToken);
-          toast.success(`Welcome back! Your registration is updated. YOUR NEW TOKEN IS GENERATED.`);
+          toast.success(`Welcome back! Registration updated with NEW TOKEN.`);
           setLoading(false);
           return;
         } else {
-          console.error('Reset error:', resetErr);
-          toast.error('Failed to update registration: ' + resetErr.message);
+          console.error('Supabase UPDATE error:', resetErr);
+          toast.error(`Update failed: ${resetErr.message}`);
           setLoading(false);
           return;
         }
       }
 
-      // 2. Insert new user
+      console.log('Performing NEW registration for:', trimmedMatric);
       const tokenStr = generateToken();
       const { error: insertErr } = await supabase
         .from('mock_exam_users')
@@ -220,27 +221,30 @@ const RegistrationPage: React.FC = () => {
           matric_number: trimmedMatric,
           department: trimmedDept,
           category: category,
-          ip_address: 'reg-new',
-          real_ip: 'reg-new'
+          ip_address: 'reg-new-v2',
+          real_ip: 'reg-new-v2',
+          has_started_exam: false,
+          has_submitted: false,
+          score: 0
         });
 
       if (insertErr) {
-        console.error('Insert error:', insertErr);
+        console.error('Supabase INSERT error:', insertErr);
         if (insertErr.code === '23505') {
-          // This should ideally be caught by the select above, but just in case of race conditions
-          toast.error('This matric number is already registered.');
+          toast.error('This matric number is already registered. Please try refreshing.');
         } else {
-          toast.error(`Database error: ${insertErr.message}. Please try again.`);
+          toast.error(`Registration error: ${insertErr.message}`);
         }
+        setLoading(false);
         return;
       }
 
       setGeneratedToken(tokenStr);
       localStorage.setItem('ceemedia_exam_token', tokenStr);
-      toast.success('Registration successful! PLEASE SAVE YOUR TOKEN.');
+      toast.success('Registration completed! Please save your token.');
     } catch (err: any) {
-      console.error('Registration failed:', err);
-      toast.error(err.message || 'Connection error. Please check your internet.');
+      console.error('Fatal registration error:', err);
+      toast.error('System error occurred. Please try again later.');
     } finally {
       setLoading(false);
     }

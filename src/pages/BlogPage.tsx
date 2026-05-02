@@ -14,7 +14,7 @@ const BlogCard = React.memo(({ blog, fullView = false }: { blog: Blog, fullView?
   const [copied, setCopied] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/blog?id=${blog.id}`;
+  const shareUrl = `${window.location.origin}/api/blog/${blog.id}`;
   const shareText = `Check out this blog post on CEE MEDIA BLOG: "${blog.title}"`;
 
   const copyToClipboard = () => {
@@ -160,13 +160,13 @@ const BlogPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [individualBlog, setIndividualBlog] = useState<Blog | null>(null);
   const blogId = searchParams.get('id');
 
   // Find the specific blog if ID is provided in URL
-  const sharedBlog = blogId ? blogs.find(b => b.id === blogId) : null;
+  const sharedBlog = blogId ? (blogs.find(b => b.id === blogId) || individualBlog) : null;
 
   const fetchBlogs = async () => {
-    setLoading(true);
     try {
       let query = supabase
         .from('blogs')
@@ -198,7 +198,24 @@ const BlogPage = () => {
   };
 
   useEffect(() => {
-    fetchBlogs();
+    const init = async () => {
+      setLoading(true);
+      if (blogId) {
+        try {
+          const { data, error } = await supabase
+            .from('blogs')
+            .select('*')
+            .eq('id', blogId)
+            .maybeSingle();
+          if (data) setIndividualBlog(data as Blog);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      await fetchBlogs();
+    };
+    
+    init();
 
     // Scroll to top if a specific blog is loaded
     if (blogId) {

@@ -92,10 +92,10 @@ const LeaderboardPage: React.FC = () => {
 
           <div className="text-center space-y-2">
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
-              COMPETITION <span className="text-brand-accent">LEADERBOARD</span>
+              CEE MEDIA <span className="text-brand-accent">LEADERBOARD</span>
             </h1>
             <p className="text-indigo-100/70 text-[10px] font-black uppercase tracking-[0.4em]">
-              Performance Leaderboard
+              OFFICIAL CAMPUS RESULTS
             </p>
           </div>
         </div>

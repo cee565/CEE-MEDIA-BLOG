@@ -121,6 +121,9 @@ const HomePage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Increment total visitors
+        await supabase.rpc('increment_total_visitors', { row_id: 'main' });
+
         // Fetch trending poll - optimized select
         const { data: polls } = await supabase
           .from('polls')
@@ -232,9 +235,9 @@ const HomePage = () => {
   const categories = [
     { name: 'Voting', icon: TrendingUp, path: '/vote' },
     { name: 'Blog', icon: BookOpen, path: '/blog' },
-    { name: 'Confessions', icon: MessageCircle, path: '/confessions' },
+    { name: 'Drip Gists', icon: MessageCircle, path: '/confessions' },
     { name: 'Mock Exam', icon: Trophy, path: '/mock-exam/register' },
-    { name: 'Campus Gist', icon: Zap, path: '/blog' },
+    { name: 'Campus Drip', icon: Zap, path: '/blog' },
   ];
 
   return (

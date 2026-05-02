@@ -36,10 +36,10 @@ const ResultPage: React.FC = () => {
 
           <div className="space-y-2 relative z-10">
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">
-              COMPETITION <span className="text-brand-accent">COMPLETED!</span>
+              CEE MEDIA <span className="text-brand-accent italic">BLOG</span>
             </h1>
             <p className="text-indigo-100/70 text-[10px] font-black uppercase tracking-[0.3em]">
-              Great job, {name}!
+              EXAM COMPLETED - {name}
             </p>
           </div>
         </div>
@@ -93,7 +93,7 @@ const ResultPage: React.FC = () => {
 
       <div className="mt-8 text-center">
         <Logo iconClassName="w-8 h-8" showText={false} />
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">CEE MEDIA BLOG MOCK EXAM v1.0</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">CEE MEDIA BLOG MOCK EXAM v2.2</p>
       </div>
     </div>
   );

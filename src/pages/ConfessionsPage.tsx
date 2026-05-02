@@ -103,7 +103,7 @@ const ConfessionsPage = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
             <Logo iconClassName="w-8 h-8" showText={false} />
-            <span className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-none">DROP <span className="text-brand-secondary">GIST</span></span>
+            <span className="text-xl font-black uppercase tracking-tighter text-slate-900 leading-none">DRIP <span className="text-brand-secondary">GISTS</span></span>
           </Link>
           <div className="flex items-center space-x-6">
              <Link to="/confessions" className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-secondary transition-colors">
@@ -130,7 +130,7 @@ const ConfessionsPage = () => {
                 <span>100% Secure & Anonymous</span>
               </motion.div>
               <h1 className="text-5xl md:text-6xl font-black text-slate-900 leading-none uppercase tracking-tighter">
-                Drop your <span className="text-brand-gradient">Gist</span>
+                Drip your <span className="text-brand-gradient">Gist</span>
               </h1>
               <p className="text-slate-500 font-medium text-sm md:text-base leading-relaxed max-w-xl">
                 Got a secret, a crushed heart, or just campus news? 
@@ -177,7 +177,7 @@ const ConfessionsPage = () => {
                     <RefreshCw className="animate-spin" size={16} />
                   ) : (
                     <>
-                      <span>Transmit Gist</span>
+                      <span>Transmit Drip</span>
                       <Send size={14} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </>
                   )}

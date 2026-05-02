@@ -30,16 +30,16 @@ async function startServer() {
       let redirectPath = "";
 
       if (type === "vote") {
-        table = "polls";
+        table = "commission_posts";
         redirectPath = "/vote";
       } else if (type === "blog") {
-        table = "posts";
+        table = "blogs";
         redirectPath = "/blog";
       } else if (type === "conversation") {
         table = "messages";
         redirectPath = "/confessions";
       } else if (type === "post") {
-        table = "posts";
+        table = "blogs";
         redirectPath = "/blog";
       } else {
         return res.redirect("/");
@@ -62,17 +62,17 @@ async function startServer() {
       const appUrl = process.env.VITE_APP_URL || `http://localhost:${PORT}`;
       
       if (type === "vote") {
-        title = entity.question || "CEE MEDIA BLOG VOTE";
-        description = entity.description || "Cast your vote on CEE MEDIA BLOG!";
+        title = entity.title || "CEE MEDIA BLOG VOTE";
+        description = `Vote now: ${entity.title} | CEE MEDIA BLOG`;
       } else if (type === "blog" || type === "post") {
         title = entity.title || "CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150).replace(/[#*`]/g, "");
       } else if (type === "conversation") {
-        title = "Anonymous Confession | CEE MEDIA BLOG";
+        title = "Drip Gists | CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150);
       }
 
-      image = entity.image || `${appUrl}/default.jpg`;
+      image = entity.image_url || entity.image || "https://i.ibb.co/vzB7Z6N/ceemedia-logo.png";
       const url = `${appUrl}${redirectPath}?id=${id}`;
 
       res.setHeader("Content-Type", "text/html");

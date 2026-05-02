@@ -142,7 +142,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
     }
   };
 
-  const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/api/conversation/${message.id}`;
+  const shareUrl = `${window.location.origin}/api/conversation/${message.id}`;
   const shareText = `Check out this anonymous confession on CEE MEDIA BLOG: "${message.content.substring(0, 50)}..."`;
 
   const copyToClipboard = () => {
@@ -427,15 +427,37 @@ const ConfessionsDisplayPage = () => {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [sharedConfession, setSharedConfession] = useState<Message | null>(null);
   const PAGE_SIZE = 20;
   const [searchParams] = useSearchParams();
   const confessionId = searchParams.get('id');
 
-  // Find the specific confession if ID is provided in URL
-  const sharedConfession = confessionId ? messages.find(m => m.id === confessionId) : null;
-
   useEffect(() => {
-    fetchApprovedMessages(0);
+    const initFetch = async () => {
+      setLoading(true);
+      
+      // If a specific ID is provided, fetch it first
+      if (confessionId) {
+        try {
+          const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('id', confessionId)
+            .maybeSingle();
+          
+          if (!error && data) {
+            setSharedConfession(data as Message);
+          }
+        } catch (err) {
+          console.error("Error fetching shared confession", err);
+        }
+      }
+
+      await fetchApprovedMessages(0);
+      setLoading(false);
+    };
+
+    initFetch();
 
     // Use limited realtime: Only subscribe to NEW confessions (INSERT events)
     // This follows the rule: "Only subscribe to NEW confessions (INSERT events)"
@@ -550,7 +572,7 @@ const ConfessionsDisplayPage = () => {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none"
           >
-            UNFILTERED <span className="text-brand-gradient">GIST</span>
+            UNFILTERED <span className="text-brand-gradient">DRIP</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -573,7 +595,7 @@ const ConfessionsDisplayPage = () => {
               className="inline-flex items-center space-x-3 bg-brand-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-secondary transition-all group hover:scale-105 active:scale-95"
             >
               <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              <span>Drop Your Juice</span>
+              <span>Drop Your Drip</span>
             </Link>
             <div className="bg-slate-100/80 backdrop-blur-sm px-6 py-4 rounded-2xl flex items-center space-x-3 border border-slate-200/50">
               <div className="flex -space-x-2">
