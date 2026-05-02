@@ -299,7 +299,7 @@ const HomePage = () => {
                 <span>Secure Mock Examination</span>
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                AAU 100 LVL <span className="text-brand-secondary">MOCK EXAM COMPETITION</span>
+                CEE MEDIA <span className="text-brand-secondary">BLOG</span>
               </h2>
               <p className="text-slate-600 text-lg font-medium tracking-tight max-w-xl">
                 The ultimate preparation platform for GST and Departmental exams. Get your token, practice under real exam conditions, and top the leaderboard.

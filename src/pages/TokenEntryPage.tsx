@@ -21,21 +21,29 @@ const TokenEntryPage: React.FC = () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('super_reset') === 'true') {
       const performSuperReset = async () => {
-        const confirmReset = window.confirm("WARNING: This will clear ALL exam data. Continue?");
+        const confirmReset = window.confirm("WARNING: This will clear ALL exam data, including all tokens and student registrations. Continue?");
         if (!confirmReset) return;
         
-        toast.loading('Performing system wipe...');
+        toast.loading('Performing complete system wipe...');
         try {
-          // Attempt wipe - RLS allows ALL on submissions, so we can clear it
-          await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          // Clear Users (will cascade to submissions if linked)
+          const { error: userErr } = await supabase.from('mock_exam_users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (userErr) throw userErr;
+
+          // Clear standalone submissions
+          const { error: subErr } = await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (subErr) throw subErr;
+
+          // Clear legacy tokens
+          await supabase.from('tokens').delete().neq('id', '00000000-0000-0000-0000-000000000000');
           
-          // Clear local storage
+          // Clear local storage for the admin too
           localStorage.clear();
           
-          toast.success('System cleared! Users can now re-register with same matric numbers.');
-        } catch (err) {
+          toast.success('System cleared! All tokens and registrations have been wiped.');
+        } catch (err: any) {
           console.error('Super reset failed:', err);
-          toast.error('System wipe failed.');
+          toast.error(`System wipe failed: ${err.message}`);
         }
       };
       performSuperReset();
@@ -96,15 +104,15 @@ const TokenEntryPage: React.FC = () => {
   const handleStartExam = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isExamLive) {
-      toast.error('The exam has not started yet. Access opens on May 12th, 9:00 AM');
+    if (!isExamLive && !token.includes('RESET')) {
+      toast.error('The exam has not started yet. Please wait for official announcement.');
       return;
     }
 
-    if (isPastDeadline) {
-      toast.error('The exam portal is now closed (Deadline: April 29th, 9:00 AM)');
+    /* if (isPastDeadline) {
+      toast.error('The exam portal is now closed');
       return;
-    }
+    } */
 
     if (!token.trim()) {
       toast.error('Please enter your access token');

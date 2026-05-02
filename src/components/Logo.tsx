@@ -28,7 +28,7 @@ export const Logo: React.FC<LogoProps> = React.memo(({
       
       <img 
         src="https://media.base44.com/images/public/user_69c58cd8140b12f4f7e0ba23/fed4f0662_Screenshot_20260326-200402.jpg" 
-        alt="AAU COMPETITION" 
+        alt="CEE MEDIA BLOG" 
         className="w-full h-full object-cover scale-[1.8] relative z-10"
         style={{ 
           mixBlendMode: 'screen',

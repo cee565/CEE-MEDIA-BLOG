@@ -93,7 +93,7 @@ const ResultPage: React.FC = () => {
 
       <div className="mt-8 text-center">
         <Logo iconClassName="w-8 h-8" showText={false} />
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">AAU MOCK COMPETITION v1.0</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">CEE MEDIA BLOG MOCK EXAM v1.0</p>
       </div>
     </div>
   );

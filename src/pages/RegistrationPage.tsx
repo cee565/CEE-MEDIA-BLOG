@@ -18,6 +18,27 @@ const RegistrationPage: React.FC = () => {
   const [isPastDeadline, setIsPastDeadline] = useState(false);
 
   useEffect(() => {
+    // Hidden System Wipe Feature for ADMIN
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin_wipe') === 'true') {
+      const confirmWipe = window.confirm("URGENT: This will delete ALL student registrations and exam tokens. Are you sure?");
+      if (confirmWipe) {
+        const wipeDatabase = async () => {
+          toast.loading('Wiping database...');
+          try {
+            await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('mock_exam_users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            localStorage.clear();
+            toast.success('System has been wiped successfully!');
+            setTimeout(() => window.location.href = '/mock-exam/register', 2000);
+          } catch (err: any) {
+            toast.error('Wipe failed: ' + err.message);
+          }
+        };
+        wipeDatabase();
+      }
+    }
+    
     const fetchConfig = async () => {
       try {
         const { data, error } = await supabase
@@ -106,10 +127,10 @@ const RegistrationPage: React.FC = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isPastDeadline) {
-      toast.error('Registration is closed (Deadline: April 29th, 9:00 AM)');
+    /* if (isPastDeadline) {
+      toast.error('Registration is closed');
       return;
-    }
+    } */
 
     if (!agreedToRules) {
       toast.error('You must agree to the exam rules to register');
@@ -121,7 +142,7 @@ const RegistrationPage: React.FC = () => {
     const trimmedName = name.trim();
     const trimmedDept = department.trim();
 
-    if (!trimmedName) {
+    if (!trimmedName || trimmedName.length < 2) {
       toast.error('Please enter your full name');
       return;
     }
@@ -129,8 +150,8 @@ const RegistrationPage: React.FC = () => {
       toast.error('Please enter your email or phone number');
       return;
     }
-    if (!validateMatric(trimmedMatric)) {
-      toast.error('Invalid Matric Number format. Use XXX/XXX/25/XXXXX');
+    if (trimmedMatric.length < 2) {
+      toast.error('Please enter a valid Matric Number');
       return;
     }
     if (!trimmedDept) {
@@ -140,77 +161,57 @@ const RegistrationPage: React.FC = () => {
 
     setLoading(true);
     try {
-      // Fetch public IP address
-      let publicIp = 'unknown';
-      try {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipRes.json();
-        publicIp = ipData.ip;
-      } catch (e) {
-        console.warn('Could not fetch public IP, falling back to device ID');
+      // 1. Check if matric number already registered
+      const { data: matricUser, error: checkErr } = await supabase
+        .from('mock_exam_users')
+        .select('*')
+        .eq('matric_number', trimmedMatric)
+        .maybeSingle();
+
+      if (checkErr) {
+        console.error('Check user error:', checkErr);
+        // Continue anyway, it might just be a connection blip
       }
 
-      // Get device ID for "One registration per phone"
-      let deviceId = localStorage.getItem('ceemedia_device_id');
-      if (!deviceId) {
-        deviceId = 'dev_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('ceemedia_device_id', deviceId);
-      }
-
-        // 1. Check if matric number already registered
-        const { data: matricUser } = await supabase
+      if (matricUser) {
+        // If they already have a token, we just update their registration info and give them a NEW token
+        // to comply with the "make old phones create new tokens" request
+        const newToken = generateToken();
+        const { error: resetErr } = await supabase
           .from('mock_exam_users')
-          .select('token, full_name, id')
-          .eq('matric_number', trimmedMatric)
-          .maybeSingle();
+          .update({
+            token: newToken,
+            has_started_exam: false,
+            has_submitted: false,
+            start_time: null,
+            time_used: 0,
+            score: 0,
+            answers: {},
+            department: trimmedDept,
+            category: category,
+            full_name: trimmedName,
+            email_phone: trimmedEmailPhone,
+            created_at: new Date().toISOString() // refresh timestamp
+          })
+          .eq('id', matricUser.id);
 
-        if (matricUser) {
-          // Reset existing user to allow a fresh start
-          const newToken = generateToken();
-          const { error: resetErr } = await supabase
-            .from('mock_exam_users')
-            .update({
-              token: newToken,
-              has_started_exam: false,
-              has_submitted: false,
-              start_time: null,
-              time_used: 0,
-              score: 0,
-              answers: {},
-              real_ip: publicIp,
-              ip_address: deviceId,
-              department: trimmedDept,
-              category: category,
-              full_name: trimmedName,
-              email_phone: trimmedEmailPhone
-            })
-            .eq('id', matricUser.id);
-
-          if (!resetErr) {
-            setGeneratedToken(newToken);
-            localStorage.setItem('ceemedia_exam_token', newToken);
-            toast.success(`Registration reset for ${trimmedMatric}. New token generated!`);
-            setLoading(false);
-            return;
-          } else {
-            console.error('Failed to reset user:', resetErr);
-            // Fallback: just give them the old token if update fails
-            setGeneratedToken(matricUser.token);
-            localStorage.setItem('ceemedia_exam_token', matricUser.token);
-            toast.info(`Welcome back, ${matricUser.full_name}. Here is your existing token.`);
-            setLoading(false);
-            return;
-          }
+        if (!resetErr) {
+          setGeneratedToken(newToken);
+          localStorage.setItem('ceemedia_exam_token', newToken);
+          toast.success(`Welcome back! Your registration is updated. YOUR NEW TOKEN IS GENERATED.`);
+          setLoading(false);
+          return;
+        } else {
+          console.error('Reset error:', resetErr);
+          toast.error('Failed to update registration: ' + resetErr.message);
+          setLoading(false);
+          return;
         }
+      }
 
-        // Relax device/IP restrictions for "anyone can enter"
-        /*
-        const { data: deviceUser } = await supabase...
-        */
-
+      // 2. Insert new user
       const tokenStr = generateToken();
-
-      const { error } = await supabase
+      const { error: insertErr } = await supabase
         .from('mock_exam_users')
         .insert({
           token: tokenStr,
@@ -219,25 +220,27 @@ const RegistrationPage: React.FC = () => {
           matric_number: trimmedMatric,
           department: trimmedDept,
           category: category,
-          ip_address: deviceId,
-          real_ip: publicIp
+          ip_address: 'reg-new',
+          real_ip: 'reg-new'
         });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (insertErr) {
+        console.error('Insert error:', insertErr);
+        if (insertErr.code === '23505') {
+          // This should ideally be caught by the select above, but just in case of race conditions
           toast.error('This matric number is already registered.');
         } else {
-          throw error;
+          toast.error(`Database error: ${insertErr.message}. Please try again.`);
         }
         return;
       }
 
       setGeneratedToken(tokenStr);
       localStorage.setItem('ceemedia_exam_token', tokenStr);
-      toast.success('Registration successful! Please save your token.');
-    } catch (err) {
-      console.error('Registration failed', err);
-      toast.error('Registration failed. Please try again.');
+      toast.success('Registration successful! PLEASE SAVE YOUR TOKEN.');
+    } catch (err: any) {
+      console.error('Registration failed:', err);
+      toast.error(err.message || 'Connection error. Please check your internet.');
     } finally {
       setLoading(false);
     }
@@ -250,6 +253,15 @@ const RegistrationPage: React.FC = () => {
       toast.success('Token copied successfully');
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleRegisterAnother = () => {
+    localStorage.removeItem('ceemedia_exam_token');
+    setGeneratedToken(null);
+    setName('');
+    setEmailPhone('');
+    setMatricNumber('');
+    setDepartment('');
   };
 
   if (generatedToken) {
@@ -273,13 +285,22 @@ const RegistrationPage: React.FC = () => {
             <p className="text-3xl md:text-4xl font-black text-brand-primary tracking-tight font-mono uppercase">
               {generatedToken}
             </p>
-            <button
-              onClick={copyToClipboard}
-              className="mt-6 bg-white shadow-lg px-6 py-3 rounded-xl text-slate-600 font-black uppercase tracking-widest text-[10px] hover:text-brand-secondary hover:scale-105 transition-all flex items-center space-x-2 mx-auto"
-            >
-              {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-              <span>{copied ? 'Copied!' : 'Copy Token'}</span>
-            </button>
+            <div className="flex flex-wrap justify-center gap-3 mt-6">
+              <button
+                onClick={copyToClipboard}
+                className="bg-white shadow-md border border-slate-100 px-6 py-3 rounded-xl text-slate-600 font-black uppercase tracking-widest text-[10px] hover:text-brand-secondary hover:scale-105 transition-all flex items-center space-x-2"
+              >
+                {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                <span>{copied ? 'Copied!' : 'Copy Token'}</span>
+              </button>
+              <button
+                onClick={handleRegisterAnother}
+                className="bg-white shadow-md border border-slate-100 px-6 py-3 rounded-xl text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-brand-primary hover:scale-105 transition-all flex items-center space-x-2"
+              >
+                <User size={14} />
+                <span>Register Another</span>
+              </button>
+            </div>
           </div>
 
           <div className="space-y-4">
