@@ -10,13 +10,13 @@ interface MetaTagsProps {
 }
 
 const MetaTags: React.FC<MetaTagsProps> = ({
-  title = 'AAU 100 LVL MOCK EXAM COMPETITION',
-  description = 'Participate in the ultimate preparation for GST and Departmental exams. Practice under real conditions and win!',
-  image = 'https://images.unsplash.com/photo-1523050335456-c38a89b7d560?auto=format&fit=crop&q=80&w=1200&h=630',
+  title = 'CEE MEDIA BLOG | Official Campus Portal',
+  description = 'Your Official Campus Voice, News and Updates. Stay updated with the latest campus stories.',
+  image = 'https://i.ibb.co/vzB7Z6N/ceemedia-logo.png',
   url = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website'
 }) => {
-  const siteTitle = title.includes('AAU') ? title : `${title} | AAU COMPETITION`;
+  const siteTitle = title.includes('CEE MEDIA') ? title : `${title} | CEE MEDIA BLOG`;
 
   return (
     <Helmet>

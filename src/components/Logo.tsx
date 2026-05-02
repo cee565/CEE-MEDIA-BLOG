@@ -43,10 +43,10 @@ export const Logo: React.FC<LogoProps> = React.memo(({
     {showText && (
       <div className={`flex flex-col justify-center ${dark ? 'text-white' : 'text-slate-900'} ${textClassName}`}>
         <div className="relative">
-          <span className="font-black text-2xl md:text-3xl tracking-tighter leading-none block">AAU</span>
+          <span className="font-black text-2xl md:text-3xl tracking-tighter leading-none block">CEE</span>
           <div className="absolute -right-4 top-0 w-2 h-2 bg-brand-accent rounded-full"></div>
         </div>
-        <span className="font-black text-[10px] md:text-[12px] tracking-[0.3em] uppercase leading-none mt-1.5 opacity-80">COMPETITION</span>
+        <span className="font-black text-[10px] md:text-[12px] tracking-[0.5em] uppercase leading-none mt-1.5 opacity-80">MEDIA</span>
       </div>
     )}
   </div>

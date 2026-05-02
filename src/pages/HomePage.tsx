@@ -15,8 +15,8 @@ const HomePage = () => {
     const greetingShown = sessionStorage.getItem('ceemedia_welcome_toast');
     if (!greetingShown) {
       setTimeout(() => {
-        toast('Welcome to AAU COMPETITION!', {
-          description: 'Explore the latest campus gists and join the mock competition.',
+        toast('Welcome back to CEE MEDIA BLOG!', {
+          description: 'Explore the latest campus gists, news and trending updates.',
           icon: <Sparkles className="text-amber-500" size={18} />,
           action: {
             label: 'How?',
@@ -47,7 +47,7 @@ const HomePage = () => {
   const handleShare = (type: string, id: string, title: string) => {
     const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
     const url = `${baseUrl}/${type}?id=${id}`;
-    const text = `Check out this ${type} on AAU COMPETITION: "${title}"`;
+    const text = `Check out this ${type} on CEE MEDIA BLOG: "${title}"`;
 
     return {
       copy: () => {
@@ -252,19 +252,19 @@ const HomePage = () => {
           
           <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2.5 rounded-full text-[10px] font-black tracking-[0.3em] relative z-10">
             <Logo iconClassName="w-8 h-8" showText={false} dark={true} />
-            <span className="uppercase">AAU 100 LVL OFFICIAL</span>
+            <span className="uppercase">CEE MEDIA OFFICIAL PORTAL</span>
           </div>
 
           <div className="space-y-8 relative z-10">
-            <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
-              AAU <span className="text-brand-accent">MOCK</span>
+            <h1 className="text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
+              CEE <span className="text-brand-accent">MEDIA</span>
             </h1>
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none text-indigo-100/90">
-              EXAM COMPETITION
+              BLOG & CAMPUS GIST
             </h2>
             
             <p className="text-xl md:text-2xl text-indigo-200 font-medium tracking-tight max-w-3xl mx-auto opacity-90 font-mono">
-              THE ULTIMATE ACADEMIC CHALLENGE.
+              YOUR VOICE, YOUR CAMPUS, YOUR STORY.
             </p>
           </div>
 
@@ -540,13 +540,6 @@ const HomePage = () => {
           <div className="flex flex-col justify-center items-center gap-6 pt-4 relative z-10">
             <Link to="/confessions/submit" className="bg-brand-secondary text-white px-12 py-5 rounded-2xl font-black hover:bg-indigo-500 transition-all shadow-xl text-xs uppercase tracking-[0.2em]">
               Share a Secret
-            </Link>
-            <Link 
-              to="/admin" 
-              className="flex items-center space-x-2 text-[11px] font-black text-white/50 hover:text-brand-accent transition-all uppercase tracking-[0.3em] group border border-white/10 px-4 py-2 rounded-xl hover:bg-white/5"
-            >
-              <Shield size={14} className="group-hover:rotate-12 transition-transform" />
-              <span>System Administration</span>
             </Link>
           </div>
         </section>

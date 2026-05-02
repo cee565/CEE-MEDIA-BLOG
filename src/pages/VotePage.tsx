@@ -316,7 +316,7 @@ const VotePage = () => {
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
       <MetaTags 
         title={sharedPost ? sharedPost.title : 'Campus Voting'}
-        description={sharedPost ? `Vote now on AAU COMPETITION: ${sharedPost.title}` : 'Participate in campus decisions and trending polls.'}
+        description={sharedPost ? `Vote now on CEE MEDIA BLOG: ${sharedPost.title}` : 'Participate in campus decisions and trending polls.'}
         image={sharedPost?.image_url || undefined}
       />
 

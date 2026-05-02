@@ -143,7 +143,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   };
 
   const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/api/conversation/${message.id}`;
-  const shareText = `Check out this anonymous confession on AAU COMPETITION: "${message.content.substring(0, 50)}..."`;
+  const shareText = `Check out this anonymous confession on CEE MEDIA BLOG: "${message.content.substring(0, 50)}..."`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -311,7 +311,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
           <div className="flex items-center space-x-1.5">
             <Logo iconClassName="w-3 h-3" showText={false} />
             <div className="text-[8px] font-black text-black uppercase tracking-tighter">
-              AAU COMPETITION VERIFIED
+              CEE MEDIA VERIFIED
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 {
-  "name": "AAU MOCK COMPETITION",
-  "description": "The official 100 level mock exam competition platform.",
+  "name": "CEE MEDIA BLOG",
+  "description": "Your Official Campus Voice, News and Updates.",
   "requestFramePermissions": [
     "geolocation"
   ]

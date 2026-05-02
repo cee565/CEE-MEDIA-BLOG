@@ -149,7 +149,7 @@ const TokenEntryPage: React.FC = () => {
             <Logo iconClassName="w-16 h-16" showText={false} dark={true} />
           </div>
           <h1 className="text-2xl font-black text-white uppercase tracking-tighter">
-            AAU 100 LVL <span className="text-brand-accent">MOCK EXAM COMPETITION</span>
+            CEE MEDIA <span className="text-brand-accent italic">BLOG</span>
           </h1>
           
           {isExamLive ? (

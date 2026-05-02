@@ -333,7 +333,7 @@ const RegistrationPage: React.FC = () => {
             <Logo iconClassName="w-16 h-16" showText={false} dark={true} />
           </div>
           <h1 className="text-3xl font-black text-white uppercase tracking-tighter relative z-10">
-            AAU 100 LVL <span className="text-brand-accent italic">MOCK EXAM COMPETITION</span>
+            CEE MEDIA <span className="text-brand-accent italic">BLOG</span>
           </h1>
           {isPastDeadline && (
             <div className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse border border-red-400 relative z-10 mx-auto w-fit">

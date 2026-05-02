@@ -20,12 +20,10 @@ const BlogPage = React.lazy(() => import('./pages/BlogPage'));
 const ConfessionsPage = React.lazy(() => import('./pages/ConfessionsPage'));
 const ConfessionsDisplayPage = React.lazy(() => import('./pages/ConfessionsDisplayPage'));
 const TeamPage = React.lazy(() => import('./pages/TeamPage'));
-const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 const TokenEntryPage = React.lazy(() => import('./pages/TokenEntryPage'));
 const QuizPage = React.lazy(() => import('./pages/QuizPage'));
 const ResultPage = React.lazy(() => import('./pages/ResultPage'));
 const LeaderboardPage = React.lazy(() => import('./pages/LeaderboardPage'));
-const QuizAdminPage = React.lazy(() => import('./pages/QuizAdminPage'));
 const RegistrationPage = React.lazy(() => import('./pages/RegistrationPage'));
 
 const Navbar = () => {
@@ -38,9 +36,8 @@ const Navbar = () => {
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
     { name: 'Drop Gist', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
-    { name: 'AAU Competition', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
+    { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
-    { name: 'Admin', path: '/admin', icon: Shield, prefetch: () => import('./pages/AdminPage') },
   ];
 
   return (
@@ -144,13 +141,11 @@ const AnimatedRoutes = () => {
           <Route path="/confessions" element={<ConfessionsDisplayPage />} />
           <Route path="/confessions/submit" element={<ConfessionsPage />} />
           <Route path="/team" element={<TeamPage />} />
-          <Route path="/admin/*" element={<AdminPage />} />
           <Route path="/mock-exam/register" element={<RegistrationPage />} />
           <Route path="/mock-exam/entry" element={<TokenEntryPage />} />
           <Route path="/mock-exam/start" element={<QuizPage />} />
           <Route path="/mock-exam/result" element={<ResultPage />} />
           <Route path="/mock-exam/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/mock-exam/admin" element={<QuizAdminPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -335,17 +330,10 @@ const App = () => {
                   <div className="space-y-4 text-center md:text-right">
                     <h4 className="text-xs font-black text-white uppercase tracking-[0.2em]">Support</h4>
                     <p className="text-slate-400 text-sm">Email: <a href="mailto:ceemedia9@gmail.com" className="text-purple-400 font-bold hover:text-purple-300 transition-colors">ceemedia9@gmail.com</a></p>
-                    <Link 
-                      to="/admin" 
-                      className="inline-flex items-center space-x-2 text-[11px] font-black text-white/60 hover:text-brand-accent transition-all uppercase tracking-[0.2em] pt-6 group border-t border-white/5 w-full mt-2"
-                    >
-                      <Shield size={14} className="group-hover:rotate-12 transition-transform" />
-                      <span>Admin Management Door</span>
-                    </Link>
                   </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-white/5 text-center flex flex-col items-center space-y-4">
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 AAU COMPETITION. All rights reserved.</p>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA BLOG. All rights reserved.</p>
                 </div>
               </div>
             </footer>

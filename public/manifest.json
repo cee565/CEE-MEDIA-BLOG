@@ -1,20 +1,20 @@
 {
-  "name": "CEE Media",
-  "short_name": "CEE",
+  "name": "CEE MEDIA BLOG",
+  "short_name": "CEE MEDIA",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#000000",
-  "theme_color": "#000000",
-  "description": "CEE Media - Trending Blog, Voting, and Mock Exam Platform",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "description": "Your Official Campus Voice, News and Updates.",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/ceemedia/192/192",
+      "src": "https://i.ibb.co/vzB7Z6N/ceemedia-logo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://picsum.photos/seed/ceemedia/512/512",
+      "src": "https://i.ibb.co/vzB7Z6N/ceemedia-logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
