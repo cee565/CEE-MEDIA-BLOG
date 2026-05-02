@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Message, MessageComment } from '../types';
 import { MessageSquare, Heart, Clock, ShieldCheck, ChevronDown, ChevronUp, Send, User, Share2, Link as LinkIcon, Check, X, Zap, ChevronRight } from 'lucide-react';
@@ -143,7 +143,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   };
 
   const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/api/conversation/${message.id}`;
-  const shareText = `Check out this anonymous confession on CEE MEDIA: "${message.content.substring(0, 50)}..."`;
+  const shareText = `Check out this anonymous confession on AAU COMPETITION: "${message.content.substring(0, 50)}..."`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -311,7 +311,7 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
           <div className="flex items-center space-x-1.5">
             <Logo iconClassName="w-3 h-3" showText={false} />
             <div className="text-[8px] font-black text-black uppercase tracking-tighter">
-              CEE MEDIA VERIFIED
+              AAU COMPETITION VERIFIED
             </div>
           </div>
         </div>
@@ -535,22 +535,22 @@ const ConfessionsDisplayPage = () => {
 
       <div className="max-w-5xl mx-auto space-y-12 relative z-10">
         {/* Header */}
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-6">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center space-x-2 bg-brand-primary text-white px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center space-x-2 bg-gradient-to-r from-brand-primary to-indigo-700 text-white px-6 py-2 rounded-full text-[10px] font-black tracking-[0.2em] uppercase shadow-lg shadow-brand-primary/20"
           >
-            <Logo iconClassName="w-4 h-4" showText={false} />
-            <span>Verified & Approved</span>
+            <Logo iconClassName="w-4 h-4" showText={false} dark={true} />
+            <span>Campus Whispers • Verified</span>
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-none"
+            className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none"
           >
-            ANONYMOUS <span className="text-brand-accent">CONFESSIONS</span>
+            UNFILTERED <span className="text-brand-gradient">GIST</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -558,22 +558,31 @@ const ConfessionsDisplayPage = () => {
             transition={{ delay: 0.2 }}
             className="text-slate-500 text-sm md:text-base max-w-2xl mx-auto font-medium"
           >
-            Real stories, real voices, completely anonymous. All messages are reviewed by our team before appearing here.
+            Dive into the latest anonymous stories, secrets, and experiences from students across campus. 
+            All thoughts shared here are processed and approved by our moderation team.
           </motion.p>
           
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="pt-4"
+            className="flex flex-wrap items-center justify-center gap-4 pt-4"
           >
             <Link 
               to="/confessions/submit"
-              className="inline-flex items-center space-x-3 bg-brand-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-secondary transition-all group"
+              className="inline-flex items-center space-x-3 bg-brand-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-secondary transition-all group hover:scale-105 active:scale-95"
             >
               <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              <span>Share Your Own Story</span>
+              <span>Drop Your Juice</span>
             </Link>
+            <div className="bg-slate-100/80 backdrop-blur-sm px-6 py-4 rounded-2xl flex items-center space-x-3 border border-slate-200/50">
+              <div className="flex -space-x-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-6 h-6 rounded-full bg-slate-300 border-2 border-white" />
+                ))}
+              </div>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">500+ Readers live</span>
+            </div>
           </motion.div>
         </div>
 

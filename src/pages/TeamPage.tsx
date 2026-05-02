@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import { TeamMember } from '../types';
 import { Users, Linkedin, Twitter, Mail, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
@@ -166,7 +166,7 @@ const TeamPage = () => {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none relative z-10"
           >
-            THE MINDS BEHIND <span className="text-brand-accent">CEE MEDIA</span>
+            THE MINDS BEHIND <span className="text-brand-accent">AAU COMPETITION</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 10 }}

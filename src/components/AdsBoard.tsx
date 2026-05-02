@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Ad } from '../types';
 import { ChevronLeft, ChevronRight, ExternalLink, Volume2, VolumeX } from 'lucide-react';

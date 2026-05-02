@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Vote, BookOpen, MessageSquare, Shield, Menu, X, TrendingUp, Zap, MessageCircle, BarChart3, Users, Trophy } from 'lucide-react';
 import { WhatsAppIcon, TikTokIcon, XIcon } from './components/BrandIcons';
 import { supabase } from './supabase';
@@ -9,6 +9,7 @@ import { Toaster, toast } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 import { HelmetProvider } from 'react-helmet-async';
 import Logo from './components/Logo';
+
 import ScrollToTop from './components/ScrollToTop';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
@@ -36,8 +37,8 @@ const Navbar = () => {
     { name: 'Vote', path: '/vote', icon: Vote, prefetch: () => import('./pages/VotePage') },
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
-    { name: 'Write Message', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
-    { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
+    { name: 'Drop Gist', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
+    { name: 'AAU Competition', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
     { name: 'Admin', path: '/admin', icon: Shield, prefetch: () => import('./pages/AdminPage') },
   ];
@@ -149,7 +150,7 @@ const AnimatedRoutes = () => {
           <Route path="/mock-exam/start" element={<QuizPage />} />
           <Route path="/mock-exam/result" element={<ResultPage />} />
           <Route path="/mock-exam/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/quiz/admin" element={<QuizAdminPage />} />
+          <Route path="/mock-exam/admin" element={<QuizAdminPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -163,7 +164,7 @@ const App = () => {
     if (!isConfigured) return;
     
     // Version-based cache reset
-    const APP_VERSION = '2.1.0'; // Major bump to force complete reset and fix persistent registration issues
+    const APP_VERSION = '2.1.1'; // Force reset after build fixes
     const storedVersion = localStorage.getItem('cee_media_version');
     if (storedVersion !== APP_VERSION) {
       // TOTAL WIPE for the new version
@@ -282,11 +283,11 @@ const App = () => {
   }
 
   return (
-    <HelmetProvider>
-      <ErrorBoundary>
-        <Router>
+    <ErrorBoundary>
+      <Router>
+        <HelmetProvider>
           <ScrollToTop />
-          <PWAInstallPrompt />
+        <PWAInstallPrompt />
           <div className="min-h-screen flex flex-col pt-16">
             <Navbar />
             <main className="flex-grow min-h-[80vh]">
@@ -344,15 +345,15 @@ const App = () => {
                   </div>
                 </div>
                 <div className="mt-12 pt-8 border-t border-white/5 text-center flex flex-col items-center space-y-4">
-                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 CEE MEDIA. All rights reserved.</p>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">© 2026 AAU COMPETITION. All rights reserved.</p>
                 </div>
               </div>
             </footer>
           </div>
           <Toaster position="top-center" richColors />
-        </Router>
-      </ErrorBoundary>
-    </HelmetProvider>
+        </HelmetProvider>
+      </Router>
+    </ErrorBoundary>
   );
 };
 

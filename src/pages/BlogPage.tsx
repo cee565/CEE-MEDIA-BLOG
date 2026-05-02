@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Blog } from '../types';
 import { Heart, MessageCircle, Share2, User, Calendar, Send, Link, Check, Search, X, ExternalLink, ArrowLeft, Clock } from 'lucide-react';
@@ -15,7 +15,7 @@ const BlogCard = React.memo(({ blog, fullView = false }: { blog: Blog, fullView?
   const [searchParams, setSearchParams] = useSearchParams();
 
   const shareUrl = `${import.meta.env.VITE_APP_URL || window.location.origin}/blog?id=${blog.id}`;
-  const shareText = `Check out this blog post on CEE MEDIA: "${blog.title}"`;
+  const shareText = `Check out this blog post on AAU COMPETITION: "${blog.title}"`;
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -222,7 +222,7 @@ const BlogPage = () => {
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-12">
       <MetaTags 
         title={sharedBlog ? sharedBlog.title : 'Official Blog'}
-        description={sharedBlog ? sharedBlog.content.substring(0, 160) + '...' : 'Stay updated with official stories from CEE MEDIA.'}
+        description={sharedBlog ? sharedBlog.content.substring(0, 160) + '...' : 'Stay updated with official stories from AAU COMPETITION.'}
         image={sharedBlog?.image_url || undefined}
         type={sharedBlog ? 'article' : 'website'}
       />

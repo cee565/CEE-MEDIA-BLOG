@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cee-media-v1';
+const CACHE_NAME = 'cee-media-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

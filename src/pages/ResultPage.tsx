@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Trophy, Home, BarChart3, CheckCircle2, RefreshCw } from 'lucide-react';
 import Logo from '../components/Logo';
 
@@ -36,7 +36,7 @@ const ResultPage: React.FC = () => {
 
           <div className="space-y-2 relative z-10">
             <h1 className="text-3xl font-black text-white uppercase tracking-tighter">
-              Mock Exam <span className="text-brand-accent">Completed!</span>
+              COMPETITION <span className="text-brand-accent">COMPLETED!</span>
             </h1>
             <p className="text-indigo-100/70 text-[10px] font-black uppercase tracking-[0.3em]">
               Great job, {name}!
@@ -87,27 +87,13 @@ const ResultPage: React.FC = () => {
               </div>
               <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Leaderboard</span>
             </button>
-            <button
-              onClick={() => {
-                if (window.confirm('This will clear your session and allow for a new registration. Are you sure?')) {
-                  localStorage.clear();
-                  navigate('/mock-exam/register');
-                }
-              }}
-              className="flex flex-col items-center justify-center p-6 rounded-3xl bg-slate-50 border border-slate-100 hover:border-brand-secondary hover:shadow-lg transition-all space-y-3 group col-span-2"
-            >
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-brand-secondary transition-colors shadow-sm">
-                <RefreshCw size={20} />
-              </div>
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Start New Registration</span>
-            </button>
           </div>
         </div>
       </motion.div>
 
       <div className="mt-8 text-center">
         <Logo iconClassName="w-8 h-8" showText={false} />
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">CEE MEDIA MOCK EXAM v1.0</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em] mt-2">AAU MOCK COMPETITION v1.0</p>
       </div>
     </div>
   );

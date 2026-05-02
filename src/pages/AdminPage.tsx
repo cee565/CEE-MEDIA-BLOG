@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Logo } from '../components/Logo';
 import { Poll, Post, Message, Analytics, TeamMember, Ad, PollGroup, Blog, CommissionPost } from '../types';
 import { Shield, LayoutDashboard, BarChart3, BookOpen, MessageSquare, Plus, Trash2, Edit, Check, X, Users, TrendingUp, Image as ImageIcon, AlertCircle, Camera, Clock, ShieldAlert, Megaphone, Monitor, Video, Globe, PieChart, Activity, PlusCircle, Upload, Edit3, RefreshCw, Database, Eye, EyeOff, Trophy, Heart } from 'lucide-react';
 import { format, addHours, addDays, isAfter } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie, AreaChart, Area } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import EditModal from '../components/EditModal';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [pollGroups, setPollGroups] = useState<PollGroup[]>([]);
@@ -1150,7 +1152,7 @@ const AdminDashboard = () => {
           ))}
           {/* Mock Exam Admin Link */}
           <button
-            onClick={() => window.open('/mock-exam/admin', '_blank')}
+            onClick={() => navigate('/mock-exam/admin')}
             className="ml-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap bg-brand-accent text-brand-primary shadow-md hover:bg-brand-focus flex items-center space-x-2"
           >
             <Trophy size={14} />

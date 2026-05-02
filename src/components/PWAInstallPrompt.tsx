@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Download, X, Share, PlusSquare, Bell } from 'lucide-react';
 import { requestNotificationPermission, subscribeUserToPush } from '../utils/pushNotifications';
 
@@ -34,10 +34,10 @@ const PWAInstallPrompt: React.FC = () => {
       e.preventDefault();
       setDeferredPrompt(e);
       
-      // Show prompt after 5 seconds if not dismissed before
+      // Show prompt after 1 second if not dismissed before
       const isDismissed = localStorage.getItem('pwa-prompt-dismissed');
       if (!isDismissed) {
-        setTimeout(() => setShowPrompt(true), 5000);
+        setTimeout(() => setShowPrompt(true), 1000);
       }
     };
 
@@ -47,7 +47,7 @@ const PWAInstallPrompt: React.FC = () => {
     if (isIOSDevice && !isStandalone) {
       const isDismissed = localStorage.getItem('pwa-ios-banner-dismissed');
       if (!isDismissed) {
-        setTimeout(() => setShowIOSBanner(true), 5000);
+        setTimeout(() => setShowIOSBanner(true), 1000);
       }
     }
 

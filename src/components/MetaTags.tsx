@@ -10,13 +10,13 @@ interface MetaTagsProps {
 }
 
 const MetaTags: React.FC<MetaTagsProps> = ({
-  title = 'CEE MEDIA | Campus Pulse & Voting',
-  description = 'Shape the future of your campus. Vote on trending topics, share your voice, and stay connected.',
+  title = 'AAU 100 LVL MOCK EXAM COMPETITION',
+  description = 'Participate in the ultimate preparation for GST and Departmental exams. Practice under real conditions and win!',
   image = 'https://images.unsplash.com/photo-1523050335456-c38a89b7d560?auto=format&fit=crop&q=80&w=1200&h=630',
-  url = window.location.href,
+  url = typeof window !== 'undefined' ? window.location.href : '',
   type = 'website'
 }) => {
-  const siteTitle = title.includes('CEE MEDIA') ? title : `${title} | CEE MEDIA`;
+  const siteTitle = title.includes('AAU') ? title : `${title} | AAU COMPETITION`;
 
   return (
     <Helmet>

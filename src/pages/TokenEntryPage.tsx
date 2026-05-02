@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import { toast } from 'sonner';
 import { ShieldCheck, ArrowRight, Trophy, Clock } from 'lucide-react';
@@ -12,6 +12,8 @@ const TokenEntryPage: React.FC = () => {
   const [timeLeft, setTimeLeft] = useState<{ days: number, hours: number, minutes: number, seconds: number } | null>(null);
   const [isPastDeadline, setIsPastDeadline] = useState(false);
   const [deadline, setDeadline] = useState<Date | null>(null);
+  const [isExamLive, setIsExamLive] = useState(false);
+  const [examStartDate] = useState(new Date('2024-05-01T09:00:00'));
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +25,7 @@ const TokenEntryPage: React.FC = () => {
           .eq('id', 'global_config')
           .maybeSingle();
         
-        let targetDeadline = new Date('2026-12-31T23:59:59');
+        let targetDeadline = new Date('2028-12-31T23:59:59');
         if (data && data.deadline) {
           targetDeadline = new Date(data.deadline);
         } else {
@@ -39,16 +41,22 @@ const TokenEntryPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!deadline) return;
-
     const timer = setInterval(() => {
       const now = new Date();
+      
+      // Check if exam is live
+      if (now >= examStartDate) {
+        setIsExamLive(true);
+      } else {
+        setIsExamLive(false);
+      }
+
+      if (!deadline) return;
       const difference = deadline.getTime() - now.getTime();
 
       if (difference <= 0) {
-        setIsPastDeadline(true);
+        setIsPastDeadline(false); // Override deadline to always be open
         setTimeLeft(null);
-        clearInterval(timer);
       } else {
         const days = Math.floor(difference / (1000 * 60 * 60 * 24));
         const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
@@ -59,11 +67,16 @@ const TokenEntryPage: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [deadline]);
+  }, [deadline, examStartDate]);
 
   const handleStartExam = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!isExamLive) {
+      toast.error('The exam has not started yet. Access opens on May 12th, 9:00 AM');
+      return;
+    }
+
     if (isPastDeadline) {
       toast.error('The exam portal is now closed (Deadline: April 29th, 9:00 AM)');
       return;
@@ -136,11 +149,15 @@ const TokenEntryPage: React.FC = () => {
             <Logo iconClassName="w-16 h-16" showText={false} dark={true} />
           </div>
           <h1 className="text-2xl font-black text-white uppercase tracking-tighter">
-            Mock Exam <span className="text-brand-accent">Portal</span>
+            AAU 100 LVL <span className="text-brand-accent">MOCK EXAM COMPETITION</span>
           </h1>
           
-          {/* Deadline Countdown */}
-          {timeLeft ? (
+          {isExamLive ? (
+             <div className="bg-green-500/20 text-green-200 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-green-500/30 flex flex-col items-center space-y-2">
+               <ShieldCheck size={20} className="animate-pulse" />
+               <span>Exam Portal is Now Live</span>
+             </div>
+          ) : timeLeft ? (
             <div className="flex justify-center space-x-2">
               {Object.entries(timeLeft).map(([unit, value]) => (
                 <div key={unit} className="flex flex-col items-center bg-white/10 px-3 py-2 rounded-xl min-w-[50px]">
@@ -156,7 +173,7 @@ const TokenEntryPage: React.FC = () => {
           ) : null}
 
           <p className="text-indigo-100/70 text-xs font-bold uppercase tracking-widest">
-            Enter your CEEMEDIA token to begin
+            {isExamLive ? 'Enter your CEEMEDIA token to begin' : 'Prepare for your mock exam'}
           </p>
         </div>
 
@@ -170,7 +187,8 @@ const TokenEntryPage: React.FC = () => {
                   value={token}
                   onChange={(e) => setToken(e.target.value.toUpperCase())}
                   placeholder="CEEMEDIA-XXXXXX"
-                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-mono text-sm uppercase tracking-widest"
+                  disabled={!isExamLive}
+                  className={`w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-mono text-sm uppercase tracking-widest ${!isExamLive ? 'opacity-50 cursor-not-allowed' : ''}`}
                   required
                 />
                 <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
@@ -180,14 +198,14 @@ const TokenEntryPage: React.FC = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !isExamLive}
             className="w-full bg-brand-primary text-white p-4 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-brand-secondary transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <span>Start Exam</span>
+                <span>{isExamLive ? 'Start Exam' : 'Portal Locked'}</span>
                 <ArrowRight size={16} />
               </>
             )}

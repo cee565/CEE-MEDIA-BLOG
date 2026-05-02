@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Question } from '../types';
 import { toast } from 'sonner';
@@ -59,7 +59,8 @@ const MockExamPage: React.FC = () => {
         .update({ 
           has_submitted: true, 
           score: score,
-          answers: answers
+          answers: answers,
+          time_used: timeTaken
         })
         .eq('id', tokenId);
 
@@ -225,10 +226,9 @@ const MockExamPage: React.FC = () => {
 
         // 2. Fetch questions
         let activeCategory = category;
-        if (!activeCategory || activeCategory === 'undefined') {
-          console.warn('No category found in localStorage, recovering from tokenData:', tokenData.category);
-          activeCategory = tokenData.category;
-          if (activeCategory) localStorage.setItem('exam_category', activeCategory);
+        if (!activeCategory || activeCategory === 'undefined' || activeCategory === 'null') {
+          activeCategory = tokenData.category || 'Science Courses';
+          localStorage.setItem('exam_category', activeCategory);
         }
 
         // Force match the database category values
@@ -246,7 +246,13 @@ const MockExamPage: React.FC = () => {
         }
 
         if (!qData || qData.length === 0) {
-          console.warn('No questions found in database for these categories');
+          console.warn('No questions found in database for these categories. Trying fallback...');
+          const { data: fallbackData } = await supabase.from('questions').select('*').limit(20);
+          if (fallbackData && fallbackData.length > 0) {
+            setQuestions(fallbackData as Question[]);
+            setLoading(false);
+            return;
+          }
           throw new Error('NO_QUESTIONS_FOUND');
         }
 
@@ -355,23 +361,27 @@ const MockExamPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-grow p-4 md:p-8 flex flex-col items-center justify-center">
+      <main className="flex-grow p-4 md:p-8 flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-96 bg-brand-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="w-full max-w-2xl bg-white rounded-[2.5rem] shadow-xl border border-slate-100 p-8 md:p-12 space-y-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="w-full max-w-2xl bg-white/80 backdrop-blur-xl rounded-[3rem] shadow-2xl border border-white p-8 md:p-14 space-y-10"
           >
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Zap size={14} className="text-brand-secondary" />
-                <span className="bg-brand-secondary/10 text-brand-secondary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
-                  {currentQuestion.category}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-brand-secondary/10 flex items-center justify-center text-brand-secondary">
+                   <Zap size={20} />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                  {currentQuestion.category} • Module {currentIndex + 1}
                 </span>
               </div>
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 leading-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-[1.1] uppercase tracking-tighter">
                 {currentQuestion.question}
               </h2>
             </div>
@@ -385,18 +395,18 @@ const MockExamPage: React.FC = () => {
                   <button
                     key={key}
                     onClick={() => handleOptionSelect(key)}
-                    className={`group w-full p-5 rounded-2xl border-2 text-left transition-all flex items-center space-x-4 ${
+                    className={`group w-full p-6 rounded-[1.5rem] border-2 text-left transition-all flex items-center space-x-5 ${
                       isSelected 
-                        ? 'border-brand-secondary bg-brand-secondary/5 shadow-md' 
-                        : 'border-slate-50 bg-slate-50 hover:border-slate-200'
+                        ? 'border-brand-secondary bg-brand-secondary/5 shadow-xl shadow-brand-secondary/10' 
+                        : 'border-slate-100 bg-slate-50/50 hover:border-slate-200 hover:bg-white'
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs transition-colors ${
-                      isSelected ? 'bg-brand-secondary text-white' : 'bg-white text-slate-400'
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all duration-500 ${
+                      isSelected ? 'bg-brand-secondary text-white rotate-[360deg]' : 'bg-white text-slate-400'
                     }`}>
                       {key}
                     </div>
-                    <span className={`font-bold text-sm ${isSelected ? 'text-brand-primary' : 'text-slate-600'}`}>
+                    <span className={`font-bold text-base ${isSelected ? 'text-brand-primary' : 'text-slate-600'}`}>
                       {optionText}
                     </span>
                   </button>

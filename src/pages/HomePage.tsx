@@ -15,8 +15,8 @@ const HomePage = () => {
     const greetingShown = sessionStorage.getItem('ceemedia_welcome_toast');
     if (!greetingShown) {
       setTimeout(() => {
-        toast('Welcome back to CEE MEDIA!', {
-          description: 'Add our app to your home screen for instant updates and faster access.',
+        toast('Welcome to AAU COMPETITION!', {
+          description: 'Explore the latest campus gists and join the mock competition.',
           icon: <Sparkles className="text-amber-500" size={18} />,
           action: {
             label: 'How?',
@@ -39,10 +39,15 @@ const HomePage = () => {
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(new Date());
 
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleShare = (type: string, id: string, title: string) => {
     const baseUrl = import.meta.env.VITE_APP_URL || window.location.origin;
     const url = `${baseUrl}/${type}?id=${id}`;
-    const text = `Check out this ${type} on CEE MEDIA: "${title}"`;
+    const text = `Check out this ${type} on AAU COMPETITION: "${title}"`;
 
     return {
       copy: () => {
@@ -197,7 +202,10 @@ const HomePage = () => {
     const blogInterval = setInterval(fetchLatestBlogs, 30000);
     
     // Update "now" every second for countdowns
-    const timerInterval = setInterval(() => setNow(new Date()), 1000);
+    const timerInterval = setInterval(() => {
+      const newNow = new Date();
+      setNow(newNow);
+    }, 1000);
 
     return () => {
       supabase.removeChannel(blogsChannel);
@@ -244,16 +252,19 @@ const HomePage = () => {
           
           <div className="inline-flex items-center space-x-3 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-2.5 rounded-full text-[10px] font-black tracking-[0.3em] relative z-10">
             <Logo iconClassName="w-8 h-8" showText={false} dark={true} />
-            <span className="uppercase">CEE MEDIA OFFICIAL</span>
+            <span className="uppercase">AAU 100 LVL OFFICIAL</span>
           </div>
 
           <div className="space-y-8 relative z-10">
-            <h1 className="text-7xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
-              CEE <span className="text-brand-accent">MEDIA</span>
+            <h1 className="text-6xl md:text-9xl font-black tracking-tighter uppercase leading-[0.8] drop-shadow-2xl">
+              AAU <span className="text-brand-accent">MOCK</span>
             </h1>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none text-indigo-100/90">
+              EXAM COMPETITION
+            </h2>
             
-            <p className="text-xl md:text-3xl text-indigo-100 font-medium tracking-tight max-w-3xl mx-auto opacity-90">
-              Your Voice, Your Campus, Your Story.
+            <p className="text-xl md:text-2xl text-indigo-200 font-medium tracking-tight max-w-3xl mx-auto opacity-90 font-mono">
+              THE ULTIMATE ACADEMIC CHALLENGE.
             </p>
           </div>
 
@@ -288,7 +299,7 @@ const HomePage = () => {
                 <span>Secure Mock Examination</span>
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                CEE MEDIA <span className="text-brand-secondary">2025 MOCKS</span>
+                AAU 100 LVL <span className="text-brand-secondary">MOCK EXAM COMPETITION</span>
               </h2>
               <p className="text-slate-600 text-lg font-medium tracking-tight max-w-xl">
                 The ultimate preparation platform for GST and Departmental exams. Get your token, practice under real exam conditions, and top the leaderboard.
@@ -395,30 +406,36 @@ const HomePage = () => {
           {/* Upcoming Votes */}
           <section className="space-y-8">
             <div className="flex items-center space-x-4">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Upcoming Votes</h2>
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em]">Upcoming Commission Vote</h2>
               <div className="h-px flex-grow bg-slate-100"></div>
             </div>
             
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
               {upcomingVotes.length > 0 ? upcomingVotes.map(vote => (
-                <div key={vote.id} className="bg-white rounded-[2.5rem] border border-slate-100 p-8 flex items-center space-x-6">
+                <div key={vote.id} className="relative bg-slate-900 rounded-[3rem] overflow-hidden p-10 md:p-16 text-center space-y-8 shadow-2xl group">
+                  <div className="absolute inset-0 bg-brand-primary opacity-20 transition-opacity group-hover:opacity-30"></div>
                   {vote.image_url && (
-                    <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0">
-                      <img src={vote.image_url} alt={vote.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 opacity-10">
+                      <img src={vote.image_url} alt="" className="w-full h-full object-cover grayscale" />
                     </div>
                   )}
-                  <div className="flex-grow space-y-2">
-                    <h3 className="font-black text-slate-900 uppercase tracking-tighter">{vote.title}</h3>
-                    <div className="flex items-center space-x-2 text-brand-secondary">
-                      <Clock size={14} />
-                      <span className="text-[10px] font-black font-mono tracking-widest">{formatCountdown(vote.start_time)}</span>
+                  
+                  <div className="relative z-10 space-y-4">
+                    <h3 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none">{vote.title}</h3>
+                  </div>
+
+                  <div className="relative z-10 space-y-2">
+                    <div className="text-4xl md:text-6xl font-black text-white font-mono tracking-[0.2em] drop-shadow-xl animate-pulse">
+                      {formatCountdown(vote.start_time)}
                     </div>
-                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Voting starts soon</p>
+                  </div>
+
+                  <div className="relative z-10 pt-4">
                   </div>
                 </div>
               )) : (
                 <div className="p-10 border-2 border-dashed border-slate-100 rounded-[2.5rem] text-center">
-                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">No upcoming votes</p>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">No upcoming votes at the moment</p>
                 </div>
               )}
             </div>
@@ -448,12 +465,7 @@ const HomePage = () => {
                       <Clock size={14} />
                       <span className="text-[10px] font-black font-mono tracking-widest">{formatCountdown(vote.end_time)}</span>
                     </div>
-                    <Link 
-                      to={`/vote/active/${vote.id}`}
-                      className="block w-full bg-brand-secondary text-white py-3 rounded-xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-brand-primary transition-all"
-                    >
-                      Vote Now
-                    </Link>
+                    {/* Vote Now button removed as per request */}
                   </div>
                 </div>
               )) : (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Token, Submission, Question } from '../types';
 import { toast } from 'sonner';
@@ -8,7 +8,7 @@ import {
   Download, RefreshCw, Search, Filter, 
   ShieldCheck, ShieldAlert, PlusCircle,
   FileText, CheckCircle2, Eye, EyeOff,
-  Settings, Clock, Save, Timer
+  Settings, Clock, Save, Timer, Zap
 } from 'lucide-react';
 import Logo from '../components/Logo';
 
@@ -149,20 +149,26 @@ const QuizAdminDashboard: React.FC = () => {
     if (!bulkText.trim()) return;
     setImporting(true);
     try {
-      // Simple Parser: Question | Option A | Option B | Option C | Option D | Correct(A/B/C/D) | Category
-      const lines = bulkText.split('\n').filter(l => l.trim().includes('|'));
-      const newQuestions = lines.map(line => {
-        const [q, a, b, c, d, correct, cat] = line.split('|').map(s => s.trim());
-        return {
+      // Improved Parser: Question | Option A | Option B | Option C | Option D | Correct(A/B/C/D) | Category
+      // Also handles CSV-ish lines or double bars
+      const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const newQuestions = [];
+      
+      for (const line of lines) {
+        const parts = line.split('|').map(s => s.trim());
+        if (parts.length < 6) continue;
+        
+        const [q, a, b, c, d, correct, cat] = parts;
+        newQuestions.push({
           question: q,
           option_a: a,
           option_b: b,
           option_c: c,
           option_d: d,
-          correct_answer: correct.toUpperCase() as 'A' | 'B' | 'C' | 'D',
+          correct_answer: (correct || 'A').toUpperCase() as 'A' | 'B' | 'C' | 'D',
           category: cat || 'Science Courses'
-        };
-      });
+        });
+      }
 
       if (newQuestions.length === 0) {
         toast.error('No valid lines found. Use format: Question | A | B | C | D | Answer | Category');
@@ -192,6 +198,22 @@ const QuizAdminDashboard: React.FC = () => {
       toast.success('Question deleted');
     } catch (err) {
       toast.error('Failed to delete question');
+    }
+  };
+
+  const deleteAllQuestions = async () => {
+    if (!confirm('Are you sure you want to delete ALL questions? This will empty your question bank.')) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      setQuestions([]);
+      toast.success('Question bank cleared');
+    } catch (err) {
+      console.error('Failed to clear questions:', err);
+      toast.error('Failed to clear question bank');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -263,7 +285,7 @@ const QuizAdminDashboard: React.FC = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `cee_media_exam_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `aau_mock_competition_${activeTab}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -334,27 +356,35 @@ const QuizAdminDashboard: React.FC = () => {
   );
   
   const filteredSubmissions = submissions.filter(s => 
-    (s.mock_exam_users?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (s.mock_exam_users?.token.toLowerCase().includes(searchTerm.toLowerCase()))
+    (s.mock_exam_users?.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (s.mock_exam_users?.token?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   const leaderboard = [...tokens]
     .filter(t => t.has_submitted)
     .sort((a, b) => {
       if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
-      return (a.time_used || 0) - (b.time_used || 0);
+      const timeA = (a as any).time_used || 0;
+      const timeB = (b as any).time_used || 0;
+      return timeA - timeB;
     });
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Sidebar/Header */}
-      <header className="bg-brand-primary p-6 text-white">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center space-x-4">
-            <Logo iconClassName="w-12 h-12" showText={false} dark={true} />
+      <header className="bg-gradient-to-r from-brand-primary to-indigo-900 p-8 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+          <div className="flex items-center space-x-6">
+            <div className="relative">
+              <div className="absolute inset-0 bg-brand-accent blur-xl opacity-20 animate-pulse"></div>
+              <Logo iconClassName="w-16 h-16 relative" showText={false} dark={true} />
+            </div>
             <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter">Exam <span className="text-brand-accent">Admin</span></h1>
-              <p className="text-indigo-100/70 text-[10px] font-black uppercase tracking-widest">Live Monitoring Dashboard</p>
+              <h1 className="text-3xl font-black uppercase tracking-tighter leading-none">
+                Exam <span className="text-brand-accent">Control</span>
+              </h1>
+              <p className="text-indigo-200/60 text-[11px] font-black uppercase tracking-[0.3em] mt-2">Mission Control Center</p>
             </div>
           </div>
 
@@ -389,24 +419,35 @@ const QuizAdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <main className="flex-grow max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8">
+      <main className="flex-grow max-w-7xl w-full mx-auto p-6 md:p-8 space-y-8 relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-brand-primary/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+        
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
-            { label: 'Registered Users', value: tokens.length, icon: Users, color: 'text-blue-600' },
-            { label: 'Tokens Generated', value: tokens.length, icon: Ticket, color: 'text-orange-600' },
-            { label: 'Taking Exam', value: tokens.filter(t => t.has_started_exam && !t.has_submitted).length, icon: RefreshCw, color: 'text-purple-600' },
-            { label: 'Submitted', value: tokens.filter(t => t.has_submitted).length, icon: ShieldCheck, color: 'text-green-600' }
+            { label: 'Total Enrolled', value: tokens.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
+            { label: 'Active Sessions', value: tokens.filter(t => t.has_started_exam && !t.has_submitted).length, icon: RefreshCw, color: 'text-purple-600', bg: 'bg-purple-50', animating: true },
+            { label: 'Completed', value: tokens.filter(t => t.has_submitted).length, icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50' },
+            { label: 'Average Score', value: leaderboard.length > 0 ? (leaderboard.reduce((a, b) => a + (b.score || 0), 0) / leaderboard.length).toFixed(1) : '0', icon: BarChart3, color: 'text-brand-accent', bg: 'bg-amber-50' }
           ].map(stat => (
-            <div key={stat.label} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-2">
+            <motion.div 
+              key={stat.label} 
+              whileHover={{ y: -5 }}
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all space-y-4"
+            >
               <div className="flex items-center justify-between">
-                <div className={`p-2 rounded-xl bg-slate-50 ${stat.color}`}>
-                  <stat.icon size={18} className={stat.label === 'Taking Exam' ? 'animate-spin' : ''} />
+                <div className={`w-12 h-12 rounded-2xl ${stat.bg} ${stat.color} flex items-center justify-center`}>
+                  <stat.icon size={22} className={stat.animating ? 'animate-spin' : ''} />
                 </div>
-                <span className="text-2xl font-black text-slate-900 tracking-tighter">{stat.value}</span>
+                <div className="text-right">
+                  <span className="text-3xl font-black text-slate-900 tracking-tighter block leading-none">{stat.value}</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 block">Students</span>
+                </div>
               </div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
-            </div>
+              <div className="pt-4 border-t border-slate-50">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">{stat.label}</p>
+              </div>
+            </motion.div>
           ))}
         </div>
 
@@ -486,6 +527,7 @@ const QuizAdminDashboard: React.FC = () => {
                       <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Info</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Matric No.</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Dept/Cat</th>
+                      <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Network/IP</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
                       <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                     </tr>
@@ -501,12 +543,18 @@ const QuizAdminDashboard: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-8 py-6">
-                          <span className="text-[10px] font-black text-slate-600 font-mono">{(token as any).matric_number || 'N/A'}</span>
+                          <span className="text-[10px] font-black text-slate-600 font-mono">{token.matric_number || 'N/A'}</span>
                         </td>
                         <td className="px-8 py-6">
                           <div className="flex flex-col">
-                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-tight">{token.department}</span>
+                            <span className="text-[10px] font-black text-slate-900 tracking-tight uppercase">{token.department}</span>
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{token.category}</span>
+                          </div>
+                        </td>
+                        <td className="px-8 py-6">
+                           <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-indigo-600 font-mono tracking-tighter leading-none">{token.real_ip || 'Fetching...'}</span>
+                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-[0.2em] mt-1">ID: {token.ip_address?.substring(0, 8)}</span>
                           </div>
                         </td>
                         <td className="px-8 py-6">
@@ -592,7 +640,16 @@ const QuizAdminDashboard: React.FC = () => {
               {activeTab === 'questions' && (
                 <div className="p-8 space-y-8">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Question Bank</h3>
+                    <div className="flex items-center space-x-3">
+                      <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Question Bank</h3>
+                      <button 
+                        onClick={deleteAllQuestions}
+                        className="bg-red-50 text-red-600 px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[8px] flex items-center space-x-2 hover:bg-red-600 hover:text-white transition-all"
+                      >
+                        <Trash2 size={10} />
+                        <span>Clear All</span>
+                      </button>
+                    </div>
                     <button 
                       onClick={() => setShowQuestionForm(!showQuestionForm)}
                       className="bg-brand-primary text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center space-x-2 hover:bg-brand-secondary transition-all"
@@ -660,8 +717,8 @@ const QuizAdminDashboard: React.FC = () => {
                                 <input
                                   required
                                   type="text"
-                                  value={(newQuestion as any)[`option_${opt}`]}
-                                  onChange={(e) => setNewQuestion({...newQuestion, [`option_${opt}`]: e.target.value})}
+                                  value={(newQuestion as any)[`option_${opt.toLowerCase()}`]}
+                                  onChange={(e) => setNewQuestion({...newQuestion, [`option_${opt.toLowerCase()}`]: e.target.value})}
                                   className="w-full p-4 rounded-xl border border-slate-200 outline-none focus:border-brand-primary"
                                   placeholder={`Option ${opt.toUpperCase()} text`}
                                   disabled={loading}
@@ -690,9 +747,7 @@ const QuizAdminDashboard: React.FC = () => {
                                 disabled={loading}
                               >
                                 <option value="Science Courses">Science Courses</option>
-                                <option value="Social Science">Social Science</option>
-                                <option value="Art Courses">Art Courses</option>
-                                <option value="General">General</option>
+                                <option value="Commercial Courses">Commercial Courses</option>
                               </select>
                             </div>
                           </div>
@@ -728,7 +783,7 @@ const QuizAdminDashboard: React.FC = () => {
                             </div>
                             <button 
                               onClick={() => deleteQuestion(q.id)}
-                              className="p-2 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                              className="p-2 text-slate-300 hover:text-red-500 transition-colors"
                             >
                               <Trash2 size={16} />
                             </button>

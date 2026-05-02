@@ -135,9 +135,11 @@ CREATE TABLE IF NOT EXISTS mock_exam_users (
   category TEXT NOT NULL,
   token TEXT NOT NULL,
   ip_address TEXT,
+  real_ip TEXT,
   has_started_exam BOOLEAN DEFAULT FALSE,
   has_submitted BOOLEAN DEFAULT FALSE,
   start_time TIMESTAMP WITH TIME ZONE,
+  time_used INTEGER DEFAULT 0, -- in seconds
   score INTEGER DEFAULT 0,
   answers JSONB DEFAULT '{}'::jsonb,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -251,6 +253,26 @@ BEGIN
   RETURN v_score;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 12. Quiz Config Table
+CREATE TABLE IF NOT EXISTS quiz_config (
+  id TEXT PRIMARY KEY,
+  deadline TIMESTAMP WITH TIME ZONE NOT NULL,
+  duration INTEGER NOT NULL DEFAULT 60, -- in minutes
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Initial Config
+INSERT INTO quiz_config (id, deadline, duration)
+VALUES ('global_config', '2026-12-31T23:59:59Z', 20)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE quiz_config ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public Read Quiz Config" ON quiz_config;
+CREATE POLICY "Public Read Quiz Config" ON quiz_config FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Allow All Quiz Config" ON quiz_config;
+CREATE POLICY "Allow All Quiz Config" ON quiz_config FOR ALL USING (true) WITH CHECK (true);
+
 ALTER TABLE analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
 ALTER TABLE poll_groups ENABLE ROW LEVEL SECURITY;

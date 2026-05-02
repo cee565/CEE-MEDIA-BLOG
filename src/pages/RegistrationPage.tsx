@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { supabase } from '../supabase';
 import { toast } from 'sonner';
 import { User, Book, Copy, Check, ArrowRight, Sparkles, ShieldCheck, Hash, Phone, Building2 } from 'lucide-react';
@@ -26,7 +26,7 @@ const RegistrationPage: React.FC = () => {
           .eq('id', 'global_config')
           .maybeSingle();
         
-        let targetDeadline = new Date('2026-12-31T23:59:59'); // Default
+        let targetDeadline = new Date('2028-12-31T23:59:59'); // Default far in future
         
         if (data && data.deadline) {
           targetDeadline = new Date(data.deadline);
@@ -141,6 +141,16 @@ const RegistrationPage: React.FC = () => {
 
     setLoading(true);
     try {
+      // Fetch public IP address
+      let publicIp = 'unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        publicIp = ipData.ip;
+      } catch (e) {
+        console.warn('Could not fetch public IP, falling back to device ID');
+      }
+
       // Get device ID for "One registration per phone"
       let deviceId = localStorage.getItem('ceemedia_device_id');
       if (!deviceId) {
@@ -148,35 +158,25 @@ const RegistrationPage: React.FC = () => {
         localStorage.setItem('ceemedia_device_id', deviceId);
       }
 
-      // 1. Check if matric number already registered
-      const { data: matricUser, error: matricErr } = await supabase
-        .from('mock_exam_users')
-        .select('token, full_name')
-        .eq('matric_number', trimmedMatric)
-        .maybeSingle();
+        // 1. Check if matric number already registered
+        const { data: matricUser } = await supabase
+          .from('mock_exam_users')
+          .select('token, full_name')
+          .eq('matric_number', trimmedMatric)
+          .maybeSingle();
 
-      if (matricUser) {
-        setGeneratedToken(matricUser.token);
-        localStorage.setItem('ceemedia_exam_token', matricUser.token);
-        toast.info(`Welcome back, ${matricUser.full_name}. You are already registered.`);
-        setLoading(false);
-        return;
-      }
+        if (matricUser) {
+          setGeneratedToken(matricUser.token);
+          localStorage.setItem('ceemedia_exam_token', matricUser.token);
+          toast.info(`Welcome back, ${matricUser.full_name}. Here is your token.`);
+          setLoading(false);
+          return;
+        }
 
-      // 2. Check if device is already registered
-      const { data: ipUser, error: ipErr } = await supabase
-        .from('mock_exam_users')
-        .select('token, full_name, matric_number')
-        .eq('ip_address', deviceId)
-        .maybeSingle();
-
-      if (ipUser) {
-        setGeneratedToken(ipUser.token);
-        localStorage.setItem('ceemedia_exam_token', ipUser.token);
-        toast.info(`Device already has a registered user (${ipUser.full_name}). Multi-account per device is prohibited.`);
-        setLoading(false);
-        return;
-      }
+        // Relax device/IP restrictions for "anyone can enter"
+        /*
+        const { data: deviceUser } = await supabase...
+        */
 
       const tokenStr = generateToken();
 
@@ -189,7 +189,8 @@ const RegistrationPage: React.FC = () => {
           matric_number: trimmedMatric,
           department: trimmedDept,
           category: category,
-          ip_address: deviceId
+          ip_address: deviceId,
+          real_ip: publicIp
         });
 
       if (error) {
@@ -311,24 +312,9 @@ const RegistrationPage: React.FC = () => {
             onClick={() => navigate('/mock-exam/entry')}
             className="w-full bg-brand-primary text-white p-5 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl hover:bg-brand-secondary transition-all flex items-center justify-center space-x-2"
           >
-            <span>Go to Exam Page</span>
+            <span>Go to Exam Portal</span>
             <ArrowRight size={16} />
           </button>
-          <div className="flex flex-col items-center space-y-4 pt-4 border-t border-slate-100">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Registered the wrong details?</p>
-            <button 
-              type="button" 
-              onClick={() => {
-                if (window.confirm('This will clear your local session. You can now register as a new user.')) {
-                  localStorage.clear(); 
-                  window.location.reload(); // Force a fresh start
-                }
-              }} 
-              className="px-6 py-2 rounded-full border border-slate-200 text-brand-secondary text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all font-sans"
-            >
-              Start New Registration
-            </button>
-          </div>
         </motion.div>
       </div>
     );
@@ -341,82 +327,83 @@ const RegistrationPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden"
       >
-        <div className="bg-brand-primary p-8 text-center space-y-4">
-          <div className="flex justify-center">
+        <div className="bg-gradient-to-br from-brand-primary to-indigo-900 p-8 text-center space-y-4 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+          <div className="flex justify-center relative z-10 transition-transform hover:scale-110 duration-300">
             <Logo iconClassName="w-16 h-16" showText={false} dark={true} />
           </div>
-          <h1 className="text-2xl font-black text-white uppercase tracking-tighter">
-            Mock Exam <span className="text-brand-accent">Registration</span>
+          <h1 className="text-3xl font-black text-white uppercase tracking-tighter relative z-10">
+            AAU 100 LVL <span className="text-brand-accent italic">MOCK EXAM COMPETITION</span>
           </h1>
           {isPastDeadline && (
-            <div className="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse border border-red-400">
+            <div className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest animate-pulse border border-red-400 relative z-10 mx-auto w-fit">
                Registration is Closed
             </div>
           )}
-          <p className="text-indigo-100/70 text-xs font-bold uppercase tracking-widest">
-            Sign up to receive your access token
+          <p className="text-indigo-100/70 text-[10px] font-bold uppercase tracking-[0.2em] relative z-10">
+            Secure your spot for the campus mock exam
           </p>
         </div>
 
         <form onSubmit={handleRegister} className="p-8 space-y-6">
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Full Name</label>
+            <div className="space-y-1.5 group">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Full Name</label>
               <div className="relative">
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm"
+                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm focus:bg-white"
                   required
                 />
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand-secondary transition-colors" size={20} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Email or Phone Number</label>
+            <div className="space-y-1.5 group">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Email or Phone Number</label>
               <div className="relative">
                 <input
                   type="text"
                   value={emailPhone}
                   onChange={(e) => setEmailPhone(e.target.value)}
                   placeholder="Enter email or phone"
-                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm"
+                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm focus:bg-white"
                   required
                 />
-                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand-secondary transition-colors" size={20} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Matric Number (XXX/XXX/25/XXXXX)</label>
+            <div className="space-y-1.5 group">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Matric Number (XXX/XXX/25/XXXXX)</label>
               <div className="relative">
                 <input
                   type="text"
                   value={matricNumber}
                   onChange={(e) => setMatricNumber(e.target.value.toUpperCase())}
                   placeholder="ABC/XYZ/25/12345"
-                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-mono text-sm uppercase tracking-widest"
+                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-mono text-sm uppercase tracking-widest focus:bg-white"
                   required
                 />
-                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand-secondary transition-colors" size={20} />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Department</label>
+            <div className="space-y-1.5 group">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Department</label>
               <div className="relative">
                 <input
                   type="text"
                   value={department}
                   onChange={(e) => setDepartment(e.target.value)}
                   placeholder="Enter your department"
-                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm"
+                  className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-medium text-sm focus:bg-white"
                   required
                 />
-                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
+                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-brand-secondary transition-colors" size={20} />
               </div>
             </div>
 

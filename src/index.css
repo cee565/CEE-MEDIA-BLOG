@@ -11,18 +11,36 @@ html {
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
   /* Brand Colors */
-  --color-brand-primary: #312e81; /* indigo-900 */
-  --color-brand-secondary: #4f46e5; /* indigo-600 */
-  --color-brand-accent: #f59e0b; /* amber-500 */
-  --color-brand-focus: #fbbf24; /* amber-400 */
+  --color-brand-primary: #1e1b4b;
+  --color-brand-secondary: #4f46e5;
+  --color-brand-accent: #f59e0b;
+  --color-brand-focus: #fbbf24;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-brand-secondary/20 selection:text-brand-secondary;
   background-image: 
-    radial-gradient(circle at 2px 2px, rgba(79, 70, 229, 0.05) 1px, transparent 0);
+    radial-gradient(circle at 2px 2px, rgba(79, 70, 229, 0.03) 1px, transparent 0);
   background-size: 32px 32px;
   background-attachment: fixed;
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-2xl hover:shadow-brand-primary/5 hover:-translate-y-1;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
+  }
 }
 
 .brand-grid {
@@ -82,6 +100,16 @@ img {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.5);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }
 
 @layer utilities {

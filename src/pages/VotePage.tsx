@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { CommissionPost, CommissionVote } from '../types';
 import { CheckCircle2, BarChart3, Share2, Link, Check, Heart, Clock, ArrowLeft, ChevronRight, TrendingUp, User, Activity } from 'lucide-react';
@@ -316,7 +316,7 @@ const VotePage = () => {
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-16">
       <MetaTags 
         title={sharedPost ? sharedPost.title : 'Campus Voting'}
-        description={sharedPost ? `Vote now on CEE MEDIA: ${sharedPost.title}` : 'Participate in campus decisions and trending polls.'}
+        description={sharedPost ? `Vote now on AAU COMPETITION: ${sharedPost.title}` : 'Participate in campus decisions and trending polls.'}
         image={sharedPost?.image_url || undefined}
       />
 

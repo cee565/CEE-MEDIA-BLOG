@@ -135,6 +135,8 @@ export interface Token {
   start_time?: string;
   submitted_at?: string;
   time_used?: number;
+  ip_address?: string;
+  real_ip?: string;
   created_at: string;
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabase';
 import { Question, Submission, Token } from '../types';
 import { Trophy, Medal, Timer, ArrowLeft, RefreshCw } from 'lucide-react';
@@ -92,7 +92,7 @@ const LeaderboardPage: React.FC = () => {
 
           <div className="text-center space-y-2">
             <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
-              MOCK EXAM <span className="text-brand-accent">RANKINGS</span>
+              COMPETITION <span className="text-brand-accent">LEADERBOARD</span>
             </h1>
             <p className="text-indigo-100/70 text-[10px] font-black uppercase tracking-[0.4em]">
               Performance Leaderboard
