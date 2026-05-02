@@ -13,10 +13,34 @@ const TokenEntryPage: React.FC = () => {
   const [isPastDeadline, setIsPastDeadline] = useState(false);
   const [deadline, setDeadline] = useState<Date | null>(null);
   const [isExamLive, setIsExamLive] = useState(false);
-  const [examStartDate] = useState(new Date('2024-05-01T09:00:00'));
+  const [examStartDate] = useState(new Date('2024-01-01T00:00:00'));
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Hidden Super Reset Feature
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('super_reset') === 'true') {
+      const performSuperReset = async () => {
+        const confirmReset = window.confirm("WARNING: This will clear ALL exam data. Continue?");
+        if (!confirmReset) return;
+        
+        toast.loading('Performing system wipe...');
+        try {
+          // Attempt wipe - RLS allows ALL on submissions, so we can clear it
+          await supabase.from('submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          
+          // Clear local storage
+          localStorage.clear();
+          
+          toast.success('System cleared! Users can now re-register with same matric numbers.');
+        } catch (err) {
+          console.error('Super reset failed:', err);
+          toast.error('System wipe failed.');
+        }
+      };
+      performSuperReset();
+    }
+
     const fetchConfig = async () => {
       try {
         const { data } = await supabase
@@ -157,20 +181,14 @@ const TokenEntryPage: React.FC = () => {
                <ShieldCheck size={20} className="animate-pulse" />
                <span>Exam Portal is Now Live</span>
              </div>
-          ) : timeLeft ? (
+          ) : (
             <div className="flex justify-center space-x-2">
-              {Object.entries(timeLeft).map(([unit, value]) => (
-                <div key={unit} className="flex flex-col items-center bg-white/10 px-3 py-2 rounded-xl min-w-[50px]">
-                  <span className="text-white font-black text-sm">{value}</span>
-                  <span className="text-indigo-200/50 text-[7px] font-black uppercase tracking-tighter">{unit}</span>
-                </div>
-              ))}
+               <div className="bg-green-500/20 text-green-200 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-green-500/30 flex flex-col items-center space-y-2">
+                 <ShieldCheck size={20} />
+                 <span>Portal Active</span>
+               </div>
             </div>
-          ) : isPastDeadline ? (
-             <div className="bg-red-500/20 text-red-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-red-500/30">
-               Registration & Exam Closed
-             </div>
-          ) : null}
+          )}
 
           <p className="text-indigo-100/70 text-xs font-bold uppercase tracking-widest">
             {isExamLive ? 'Enter your CEEMEDIA token to begin' : 'Prepare for your mock exam'}

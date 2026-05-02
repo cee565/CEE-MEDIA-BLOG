@@ -99,9 +99,8 @@ const RegistrationPage: React.FC = () => {
   };
 
   const validateMatric = (matric: string) => {
-    // Format: XXX/XXX/25/XXXXX
-    const regex = /^[A-Z]{3}\/[A-Z]{3}\/25\/[0-9]{5}$/i;
-    return regex.test(matric);
+    // Very loose validation: at least 5 characters
+    return matric.length >= 5;
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -161,16 +160,47 @@ const RegistrationPage: React.FC = () => {
         // 1. Check if matric number already registered
         const { data: matricUser } = await supabase
           .from('mock_exam_users')
-          .select('token, full_name')
+          .select('token, full_name, id')
           .eq('matric_number', trimmedMatric)
           .maybeSingle();
 
         if (matricUser) {
-          setGeneratedToken(matricUser.token);
-          localStorage.setItem('ceemedia_exam_token', matricUser.token);
-          toast.info(`Welcome back, ${matricUser.full_name}. Here is your token.`);
-          setLoading(false);
-          return;
+          // Reset existing user to allow a fresh start
+          const newToken = generateToken();
+          const { error: resetErr } = await supabase
+            .from('mock_exam_users')
+            .update({
+              token: newToken,
+              has_started_exam: false,
+              has_submitted: false,
+              start_time: null,
+              time_used: 0,
+              score: 0,
+              answers: {},
+              real_ip: publicIp,
+              ip_address: deviceId,
+              department: trimmedDept,
+              category: category,
+              full_name: trimmedName,
+              email_phone: trimmedEmailPhone
+            })
+            .eq('id', matricUser.id);
+
+          if (!resetErr) {
+            setGeneratedToken(newToken);
+            localStorage.setItem('ceemedia_exam_token', newToken);
+            toast.success(`Registration reset for ${trimmedMatric}. New token generated!`);
+            setLoading(false);
+            return;
+          } else {
+            console.error('Failed to reset user:', resetErr);
+            // Fallback: just give them the old token if update fails
+            setGeneratedToken(matricUser.token);
+            localStorage.setItem('ceemedia_exam_token', matricUser.token);
+            toast.info(`Welcome back, ${matricUser.full_name}. Here is your existing token.`);
+            setLoading(false);
+            return;
+          }
         }
 
         // Relax device/IP restrictions for "anyone can enter"
@@ -378,13 +408,13 @@ const RegistrationPage: React.FC = () => {
             </div>
 
             <div className="space-y-1.5 group">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Matric Number (XXX/XXX/25/XXXXX)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 group-focus-within:text-brand-secondary transition-colors">Matric Number</label>
               <div className="relative">
                 <input
                   type="text"
                   value={matricNumber}
                   onChange={(e) => setMatricNumber(e.target.value.toUpperCase())}
-                  placeholder="ABC/XYZ/25/12345"
+                  placeholder="Enter your Matric Number"
                   className="w-full p-4 pl-12 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:border-brand-secondary focus:ring-4 focus:ring-brand-secondary/5 transition-all font-mono text-sm uppercase tracking-widest focus:bg-white"
                   required
                 />

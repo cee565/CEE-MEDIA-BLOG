@@ -24,8 +24,8 @@ async function startServer() {
 
     try {
       let table = "";
-      let title = "AAU COMPETITION";
-      let description = "AAU 100 LVL MOCK EXAM COMPETITION PORTAL.";
+      let title = "CEE MEDIA BLOG";
+      let description = "Official Campus Voice, News and Updates.";
       let image = "";
       let redirectPath = "";
 
@@ -62,13 +62,13 @@ async function startServer() {
       const appUrl = process.env.VITE_APP_URL || `http://localhost:${PORT}`;
       
       if (type === "vote") {
-        title = entity.question || "AAU COMPETITION VOTE";
-        description = entity.description || "Cast your vote on AAU COMPETITION!";
+        title = entity.question || "CEE MEDIA BLOG VOTE";
+        description = entity.description || "Cast your vote on CEE MEDIA BLOG!";
       } else if (type === "blog" || type === "post") {
-        title = entity.title || "AAU COMPETITION BLOG";
+        title = entity.title || "CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150).replace(/[#*`]/g, "");
       } else if (type === "conversation") {
-        title = "Anonymous Confession | AAU COMPETITION";
+        title = "Anonymous Confession | CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150);
       }
 

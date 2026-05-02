@@ -68,24 +68,24 @@ self.addEventListener('fetch', (event) => {
 
 // Push notification event
 self.addEventListener('push', (event) => {
-  let data = { title: 'CEE Media', body: 'New update available!' };
+  let data = { title: 'CEE MEDIA BLOG', body: 'New update available!' };
   
   if (event.data) {
     try {
       data = event.data.json();
     } catch (e) {
-      data = { title: 'CEE Media', body: event.data.text() };
+      data = { title: 'CEE MEDIA BLOG', body: event.data.text() };
     }
   }
 
   const options = {
     body: data.body,
-    icon: '/https://picsum.photos/seed/ceemedia/192/192',
-    badge: '/https://picsum.photos/seed/ceemedia/192/192',
+    icon: 'https://i.ibb.co/vzB7Z6N/ceemedia-logo.png',
+    badge: 'https://i.ibb.co/vzB7Z6N/ceemedia-logo.png',
     data: data.url || '/',
     vibrate: [100, 50, 100],
     actions: [
-      { action: 'open', title: 'Open App' }
+      { action: 'open', title: 'Open' }
     ]
   };
 
