@@ -144,6 +144,9 @@ const AnimatedRoutes = () => {
           
           {/* Admin - Hidden path */}
           <Route path="/super-admin-portal" element={<AdminPage />} />
+
+          {/* Redirect old mock-exam routes to home to prevent 404s */}
+          <Route path="/mock-exam/*" element={<HomePage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
@@ -157,7 +160,7 @@ const App = () => {
     if (!isConfigured) return;
     
     // Version-based cache reset
-    const APP_VERSION = '2.4.0'; // Updated to 2.4.0 for Confessions rebranding & hiding Mock Exam
+    const APP_VERSION = '2.4.1'; // Updated to 2.4.1 for fully hiding mock exam and fixing 404s
     const storedVersion = localStorage.getItem('cee_media_version');
     if (storedVersion && storedVersion !== APP_VERSION) {
       // ONLY clear if there's a stored version but it's old
