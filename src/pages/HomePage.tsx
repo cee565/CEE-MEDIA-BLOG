@@ -16,7 +16,7 @@ const HomePage = () => {
     if (!greetingShown) {
       setTimeout(() => {
         toast('Welcome back to CEE MEDIA BLOG!', {
-          description: 'Explore the latest campus gists, news and trending updates.',
+          description: 'Explore the latest campus news, confessions and trending updates.',
           icon: <Sparkles className="text-amber-500" size={18} />,
           action: {
             label: 'How?',
@@ -235,9 +235,8 @@ const HomePage = () => {
   const categories = [
     { name: 'Voting', icon: TrendingUp, path: '/vote' },
     { name: 'Blog', icon: BookOpen, path: '/blog' },
-    { name: 'Drip Gists', icon: MessageCircle, path: '/confessions' },
-    { name: 'Mock Exam', icon: Trophy, path: '/mock-exam/register' },
-    { name: 'Campus Drip', icon: Zap, path: '/blog' },
+    { name: 'Confessions', icon: MessageCircle, path: '/confessions' },
+    { name: 'Campus News', icon: Zap, path: '/blog' },
   ];
 
   return (
@@ -263,7 +262,7 @@ const HomePage = () => {
               CEE <span className="text-brand-accent">MEDIA</span>
             </h1>
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter uppercase leading-none text-indigo-100/90">
-              BLOG & CAMPUS GIST
+              CAMPUS BLOG & CONFESSIONS
             </h2>
             
             <p className="text-xl md:text-2xl text-indigo-200 font-medium tracking-tight max-w-3xl mx-auto opacity-90 font-mono">
@@ -281,63 +280,6 @@ const HomePage = () => {
             <Link to="/blog" className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-12 py-5 rounded-2xl font-black hover:bg-white/20 transition-all text-xs uppercase tracking-[0.2em]">
               Explore Blog
             </Link>
-          </div>
-        </section>
-
-        {/* Mock Exam Featured Section */}
-        <section className="relative overflow-hidden rounded-[3rem] bg-indigo-50 border border-indigo-100 p-12 md:p-16 space-y-10 group">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-accent/30 rounded-full blur-[100px] -mr-48 -mt-48 group-hover:bg-brand-accent/40 transition-colors duration-1000"></div>
-          
-          <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
-            <div className="flex-shrink-0 w-32 h-32 md:w-48 md:h-48 bg-white rounded-[2.5rem] shadow-xl flex items-center justify-center text-brand-primary border border-slate-50 relative">
-              <Trophy size={64} className="md:size-80" strokeWidth={1.5} />
-              <div className="absolute -bottom-2 -right-2 bg-brand-accent text-brand-primary text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg border-2 border-white uppercase tracking-widest animate-bounce">
-                Live
-              </div>
-            </div>
-
-            <div className="flex-grow space-y-6 text-center md:text-left">
-              <div className="inline-flex items-center space-x-2 bg-indigo-600/10 text-indigo-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                <Shield size={14} />
-                <span>Secure Mock Examination</span>
-              </div>
-              <h2 className="text-4xl md:text-6xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                CEE MEDIA <span className="text-brand-secondary">BLOG</span>
-              </h2>
-              <p className="text-slate-600 text-lg font-medium tracking-tight max-w-xl">
-                The ultimate preparation platform for GST and Departmental exams. Get your token, practice under real exam conditions, and top the leaderboard.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
-                <Link 
-                  to="/mock-exam/register" 
-                  className="bg-brand-primary text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl hover:bg-brand-secondary transition-all flex items-center justify-center space-x-2"
-                >
-                  <span>Register Now</span>
-                  <ChevronRight size={16} />
-                </Link>
-                <Link 
-                  to="/mock-exam/entry" 
-                  className="bg-white text-slate-900 px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] border border-slate-100 shadow-sm hover:bg-slate-50 transition-all flex items-center justify-center space-x-2"
-                >
-                  <span>Enter Exam Portal</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="hidden lg:grid grid-cols-2 gap-4">
-              {[
-                { label: 'Science', desc: 'MTH/PHY/CHM/GST' },
-                { label: 'Commercial', desc: 'ACC/ECO/GST' },
-                { label: 'Duration', desc: '20 Minutes' },
-                { label: 'Real-time', desc: 'Leaderboard' },
-              ].map(item => (
-                <div key={item.label} className="bg-white/60 backdrop-blur-sm p-6 rounded-3xl border border-white/40 shadow-sm text-center space-y-1">
-                  <div className="text-[10px] font-black text-brand-primary uppercase tracking-widest">{item.label}</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{item.desc}</div>
-                </div>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -522,7 +464,7 @@ const HomePage = () => {
             { label: 'Active Users', value: stats.visitors, icon: Users },
             { label: 'Votes Cast', value: stats.votes, icon: Activity },
             { label: 'Confessions', value: stats.confessions, icon: MessageCircle },
-            { label: 'Campus Gists', value: stats.posts, icon: Zap },
+            { label: 'Campus Updates', value: stats.posts, icon: Zap },
           ].map((stat) => (
             <div key={stat.label} className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm text-center space-y-3 group hover:border-brand-secondary hover:shadow-xl transition-all">
               <div className="text-4xl font-black text-slate-900 tracking-tighter transition-transform">
@@ -542,7 +484,7 @@ const HomePage = () => {
           </div>
           <div className="flex flex-col justify-center items-center gap-6 pt-4 relative z-10">
             <Link to="/confessions/submit" className="bg-brand-secondary text-white px-12 py-5 rounded-2xl font-black hover:bg-indigo-500 transition-all shadow-xl text-xs uppercase tracking-[0.2em]">
-              Share a Secret
+              Write your confession
             </Link>
           </div>
         </section>

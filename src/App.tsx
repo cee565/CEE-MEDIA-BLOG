@@ -36,8 +36,7 @@ const Navbar = () => {
     { name: 'Vote', path: '/vote', icon: Vote, prefetch: () => import('./pages/VotePage') },
     { name: 'Blog', path: '/blog', icon: BookOpen, prefetch: () => import('./pages/BlogPage') },
     { name: 'Confessions', path: '/confessions', icon: MessageSquare, prefetch: () => import('./pages/ConfessionsDisplayPage') },
-    { name: 'Drip Gists', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
-    { name: 'Mock Exam', path: '/mock-exam/register', icon: Trophy, prefetch: () => import('./pages/RegistrationPage') },
+    { name: 'Write your confession', path: '/confessions/submit', icon: Zap, prefetch: () => import('./pages/ConfessionsPage') },
     { name: 'Team', path: '/team', icon: Users, prefetch: () => import('./pages/TeamPage') },
   ];
 
@@ -142,11 +141,15 @@ const AnimatedRoutes = () => {
           <Route path="/confessions" element={<ConfessionsDisplayPage />} />
           <Route path="/confessions/submit" element={<ConfessionsPage />} />
           <Route path="/team" element={<TeamPage />} />
+          
+          {/* Mock Exam - Hidden for now */}
+          {/* 
           <Route path="/mock-exam/register" element={<RegistrationPage />} />
           <Route path="/mock-exam/entry" element={<TokenEntryPage />} />
           <Route path="/mock-exam/start" element={<QuizPage />} />
           <Route path="/mock-exam/result" element={<ResultPage />} />
           <Route path="/mock-exam/leaderboard" element={<LeaderboardPage />} />
+          */}
           <Route path="/mock-exam/admin" element={<AdminPage />} />
         </Routes>
       </motion.div>
@@ -161,7 +164,7 @@ const App = () => {
     if (!isConfigured) return;
     
     // Version-based cache reset
-    const APP_VERSION = '2.3.0'; // Updated to 2.3.0 for Drip Gists & Route Fixes
+    const APP_VERSION = '2.4.0'; // Updated to 2.4.0 for Confessions rebranding & hiding Mock Exam
     const storedVersion = localStorage.getItem('cee_media_version');
     if (storedVersion && storedVersion !== APP_VERSION) {
       // ONLY clear if there's a stored version but it's old
@@ -192,50 +195,27 @@ const App = () => {
           });
         }
       })
-      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages', filter: 'approved=eq.true' }, (payload: any) => {
-        if (window.location.pathname !== '/confessions') {
-          toast.info("New Confession Added!", {
-            description: "Someone just shared a secret...",
-            action: {
-              label: "View",
-              onClick: () => window.location.href = '/confessions'
-            },
-            icon: <MessageSquare size={14} className="text-orange-600" />
-          });
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'messages' }, (payload: any) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          if (payload.new.approved && (!payload.old || !payload.old.approved)) {
+            if (window.location.pathname !== '/confessions') {
+              toast.info("New Confession Added!", {
+                description: "Someone just shared a secret...",
+                action: {
+                  label: "View",
+                  onClick: () => window.location.href = '/confessions'
+                },
+                icon: <MessageSquare size={14} className="text-orange-600" />
+              });
+            }
+          }
         }
       })
       .subscribe();
 
     const trackVisitor = async () => {
-      const today = format(new Date(), 'yyyy-MM-dd');
-      
       try {
-        const { data: snap, error } = await supabase
-          .from('analytics')
-          .select('*')
-          .eq('id', 'main')
-          .single();
-
-        if (snap) {
-          const dailyVisitors = snap.daily_visitors || {};
-          dailyVisitors[today] = (dailyVisitors[today] || 0) + 1;
-
-          await supabase
-            .from('analytics')
-            .update({
-              total_visitors: (snap.total_visitors || 0) + 1,
-              daily_visitors: dailyVisitors
-            })
-            .eq('id', 'main');
-        } else {
-          await supabase
-            .from('analytics')
-            .insert({
-              id: 'main',
-              total_visitors: 1,
-              daily_visitors: { [today]: 1 }
-            });
-        }
+        await supabase.rpc('increment_total_visitors', { row_id: 'main' });
       } catch (e) {
         console.error("Analytics tracking failed", e);
       }

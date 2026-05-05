@@ -10,6 +10,8 @@ import { useSearchParams, Link } from 'react-router-dom';
 import Logo from '../components/Logo';
 import MetaTags from '../components/MetaTags';
 
+import ShareButtons from '../components/ShareButtons';
+
 const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [comments, setComments] = useState<MessageComment[]>([]);
@@ -18,8 +20,6 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   const [showComments, setShowComments] = useState(false);
   const [liked, setLiked] = useState(false);
   const [localLikes, setLocalLikes] = useState(message.likes || 0);
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [replyTo, setReplyTo] = useState<any>(null);
   const storageKey = `liked_confession_${message.id}`;
 
@@ -143,31 +143,6 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
   };
 
   const shareUrl = `${window.location.origin}/api/conversation/${message.id}`;
-  const shareText = `Check out this anonymous confession on CEE MEDIA BLOG: "${message.content.substring(0, 50)}..."`;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const shareToTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
-  };
-
-  const shareToFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-  };
-
-  const shareToWhatsApp = () => {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
-  };
-
-  const shareToWhatsAppBusiness = () => {
-    // WhatsApp Business uses the same API but we can label it differently in UI
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
-  };
 
   const truncatedContent = message.content.length > 150 
     ? message.content.substring(0, 150) + "..."
@@ -249,64 +224,11 @@ const ConfessionCard = React.memo(({ message }: { message: Message }) => {
               />
               <span>{localLikes}</span>
             </motion.button>
-            <div className="relative">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowShareMenu(!showShareMenu)}
-                className={`transition-colors ${showShareMenu ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
-              >
-                <Share2 size={18} />
-              </motion.button>
-
-              <AnimatePresence>
-                {showShareMenu && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowShareMenu(false)}
-                    />
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-40 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50"
-                    >
-                      <div className="p-1.5 space-y-0.5">
-                        <button 
-                          onClick={() => { copyToClipboard(); setShowShareMenu(false); }}
-                          className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700"
-                        >
-                          {copied ? <Check size={14} className="text-green-500" /> : <LinkIcon size={14} />}
-                          <span className="text-[10px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
-                        </button>
-                        <button 
-                          onClick={() => { shareToTwitter(); setShowShareMenu(false); }}
-                          className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700"
-                        >
-                          <XIcon size={14} className="text-black" />
-                          <span className="text-[10px] font-bold">X</span>
-                        </button>
-                        <button 
-                          onClick={() => { shareToWhatsApp(); setShowShareMenu(false); }}
-                          className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700"
-                        >
-                          <WhatsAppIcon size={14} className="text-green-500" />
-                          <span className="text-[10px] font-bold">WhatsApp</span>
-                        </button>
-                        <button 
-                          onClick={() => { copyToClipboard(); setShowShareMenu(false); }}
-                          className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-lg transition-colors text-slate-700"
-                        >
-                          <TikTokIcon size={14} className="text-black" />
-                          <span className="text-[10px] font-bold">TikTok</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
+            <ShareButtons 
+              url={shareUrl} 
+              title={message.content.substring(0, 50)} 
+              align="left"
+            />
           </div>
           <div className="flex items-center space-x-1.5">
             <Logo iconClassName="w-3 h-3" showText={false} />
@@ -572,7 +494,7 @@ const ConfessionsDisplayPage = () => {
             transition={{ delay: 0.1 }}
             className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none"
           >
-            UNFILTERED <span className="text-brand-gradient">DRIP</span>
+            UNFILTERED <span className="text-brand-gradient">CONFESSIONS</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -595,7 +517,7 @@ const ConfessionsDisplayPage = () => {
               className="inline-flex items-center space-x-3 bg-brand-primary text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-brand-secondary transition-all group hover:scale-105 active:scale-95"
             >
               <Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-              <span>Drop Your Drip</span>
+              <span>Write your confession</span>
             </Link>
             <div className="bg-slate-100/80 backdrop-blur-sm px-6 py-4 rounded-2xl flex items-center space-x-3 border border-slate-200/50">
               <div className="flex -space-x-2">
@@ -621,7 +543,7 @@ const ConfessionsDisplayPage = () => {
               <Zap size={16} />
             </div>
             <p className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-widest">
-              Have a secret? <span className="text-brand-primary">Go to "Write Message"</span> to share it anonymously!
+              Have a secret? <span className="text-brand-primary">Go to "Write your confession"</span> to share it anonymously!
             </p>
           </div>
           <ChevronRight size={16} className="text-brand-primary group-hover:translate-x-1 transition-transform" />

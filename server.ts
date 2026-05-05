@@ -68,7 +68,7 @@ async function startServer() {
         title = entity.title || "CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150).replace(/[#*`]/g, "");
       } else if (type === "conversation") {
-        title = "Drip Gists | CEE MEDIA BLOG";
+        title = "Anonymous Confession | CEE MEDIA BLOG";
         description = (entity.content || "").slice(0, 150);
       }
 

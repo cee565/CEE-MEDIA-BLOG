@@ -125,6 +125,23 @@ CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = '
 DROP POLICY IF EXISTS "Public Delete" ON storage.objects;
 CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'media');
 
+-- 10. Analytics RPC
+CREATE OR REPLACE FUNCTION increment_total_visitors(row_id TEXT)
+RETURNS VOID AS $$
+BEGIN
+  INSERT INTO analytics (id, total_visitors, daily_visitors)
+  VALUES (row_id, 1, jsonb_build_object(to_char(NOW(), 'YYYY-MM-DD'), 1))
+  ON CONFLICT (id) DO UPDATE SET
+    total_visitors = analytics.total_visitors + 1,
+    daily_visitors = jsonb_set(
+      analytics.daily_visitors,
+      ARRAY[to_char(NOW(), 'YYYY-MM-DD')],
+      (COALESCE((analytics.daily_visitors->>to_char(NOW(), 'YYYY-MM-DD'))::int, 0) + 1)::text::jsonb
+    ),
+    updated_at = NOW();
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 11. Mock Exam Tables
 CREATE TABLE IF NOT EXISTS mock_exam_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

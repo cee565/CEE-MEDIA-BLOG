@@ -9,32 +9,12 @@ import { toast } from 'sonner';
 import { useSearchParams, Link as RouterLink } from 'react-router-dom';
 import MetaTags from '../components/MetaTags';
 
+import ShareButtons from '../components/ShareButtons';
+
 const BlogCard = React.memo(({ blog, fullView = false }: { blog: Blog, fullView?: boolean }) => {
-  const [showShareMenu, setShowShareMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const shareUrl = `${window.location.origin}/api/blog/${blog.id}`;
-  const shareText = `Check out this blog post on CEE MEDIA BLOG: "${blog.title}"`;
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const shareToTwitter = () => {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`, '_blank');
-  };
-
-  const shareToFacebook = () => {
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`, '_blank');
-  };
-
-  const shareToWhatsApp = () => {
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`, '_blank');
-  };
 
   return (
     <motion.div 
@@ -98,58 +78,11 @@ const BlogCard = React.memo(({ blog, fullView = false }: { blog: Blog, fullView?
       </div>
 
       <div className={`px-8 py-4 bg-slate-50/30 border-t border-slate-50 flex justify-between items-center ${fullView ? 'px-0 bg-transparent border-none' : ''}`}>
-        <div className="flex space-x-6">
-          <button 
-            onClick={() => setShowShareMenu(!showShareMenu)}
-            className={`flex items-center space-x-2 text-[10px] font-black uppercase tracking-widest transition-colors ${showShareMenu ? 'text-brand-secondary' : 'text-slate-400 hover:text-brand-secondary'}`}
-          >
-            <Share2 size={18} />
-            <span>Share</span>
-          </button>
-        </div>
-        
-        <div className="relative">
-          <AnimatePresence>
-            {showShareMenu && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setShowShareMenu(false)}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-full right-0 mb-2 w-44 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
-                >
-                  <div className="p-1.5 space-y-1">
-                    <button 
-                      onClick={() => { copyToClipboard(); setShowShareMenu(false); }}
-                      className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-700"
-                    >
-                      {copied ? <Check size={14} className="text-green-500" /> : <Link size={14} />}
-                      <span className="text-[10px] font-bold">{copied ? 'Copied!' : 'Copy Link'}</span>
-                    </button>
-                    <button 
-                      onClick={() => { shareToTwitter(); setShowShareMenu(false); }}
-                      className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-700"
-                    >
-                      <XIcon size={14} className="text-black" />
-                      <span className="text-[10px] font-bold">X</span>
-                    </button>
-                    <button 
-                      onClick={() => { shareToWhatsApp(); setShowShareMenu(false); }}
-                      className="w-full flex items-center space-x-2.5 px-2.5 py-1.5 hover:bg-slate-50 rounded-xl transition-colors text-slate-700"
-                    >
-                      <WhatsAppIcon size={14} className="text-green-500" />
-                      <span className="text-[10px] font-bold">WhatsApp</span>
-                    </button>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
+        <ShareButtons 
+          url={shareUrl} 
+          title={blog.title} 
+          align="left"
+        />
       </div>
     </motion.div>
   );
@@ -239,7 +172,7 @@ const BlogPage = () => {
     <div className="max-w-7xl mx-auto px-4 py-12 space-y-12">
       <MetaTags 
         title={sharedBlog ? sharedBlog.title : 'Official Blog'}
-        description={sharedBlog ? sharedBlog.content.substring(0, 160) + '...' : 'Stay updated with the latest campus news and gists from CEE MEDIA BLOG.'}
+        description={sharedBlog ? sharedBlog.content.substring(0, 160) + '...' : 'Stay updated with the latest campus news and trends from CEE MEDIA BLOG.'}
         image={sharedBlog?.image_url || undefined}
         type={sharedBlog ? 'article' : 'website'}
       />

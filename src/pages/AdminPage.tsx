@@ -12,12 +12,12 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ totalUsers: 0, submitted: 0, nonSubmitted: 0 });
   const navigate = useNavigate();
 
-  const [view, setView] = useState<'registrations' | 'gists'>('registrations');
-  const [gists, setGists] = useState<any[]>([]);
+  const [view, setView] = useState<'registrations' | 'confessions'>('registrations');
+  const [confessions, setConfessions] = useState<any[]>([]);
 
   useEffect(() => {
     fetchUsers();
-    fetchGists();
+    fetchConfessions();
   }, []);
 
   const fetchUsers = async () => {
@@ -44,43 +44,43 @@ export default function AdminPage() {
     }
   };
 
-  const fetchGists = async () => {
+  const fetchConfessions = async () => {
     try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setGists(data || []);
+      setConfessions(data || []);
     } catch (err) {
-      console.error('Failed to fetch gists', err);
+      console.error('Failed to fetch confessions', err);
     }
   };
 
-  const approveGist = async (id: string, currentStatus: boolean) => {
+  const approveConfession = async (id: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from('messages')
         .update({ approved: !currentStatus })
         .eq('id', id);
       if (error) throw error;
-      toast.success(currentStatus ? 'Gist hidden' : 'Gist approved!');
-      fetchGists();
+      toast.success(currentStatus ? 'Confession hidden' : 'Confession approved!');
+      fetchConfessions();
     } catch (err: any) {
       toast.error('Operation failed: ' + err.message);
     }
   };
 
-  const deleteGist = async (id: string) => {
-    if (!window.confirm('Delete this gist forever?')) return;
+  const deleteConfession = async (id: string) => {
+    if (!window.confirm('Delete this confession forever?')) return;
     try {
       const { error } = await supabase
         .from('messages')
         .delete()
         .eq('id', id);
       if (error) throw error;
-      toast.success('Gist deleted');
-      fetchGists();
+      toast.success('Confession deleted');
+      fetchConfessions();
     } catch (err: any) {
       toast.error('Delete failed: ' + err.message);
     }
@@ -213,10 +213,10 @@ export default function AdminPage() {
             Registrations
           </button>
           <button 
-            onClick={() => setView('gists')}
-            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'gists' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            onClick={() => setView('confessions')}
+            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'confessions' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
-            Drip Gists
+            Confessions
           </button>
         </div>
 
@@ -346,32 +346,32 @@ export default function AdminPage() {
               <div className="p-6 border-b border-slate-50">
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter flex items-center space-x-3">
                   <FileText className="text-brand-primary" />
-                  <span>Drip Gist Moderation</span>
+                  <span>Confession Moderation</span>
                 </h3>
               </div>
               
-              {gists.map((gist) => (
-                <div key={gist.id} className="p-6 flex items-start justify-between gap-4 hover:bg-slate-50 transition-colors">
+              {confessions.map((confession) => (
+                <div key={confession.id} className="p-6 flex items-start justify-between gap-4 hover:bg-slate-50 transition-colors">
                   <div className="space-y-2 flex-grow">
-                    <p className="text-slate-900 font-medium text-sm leading-relaxed">{gist.content}</p>
+                    <p className="text-slate-900 font-medium text-sm leading-relaxed">{confession.content}</p>
                     <div className="flex items-center space-x-4">
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-                        {new Date(gist.created_at).toLocaleString()}
+                        {new Date(confession.created_at).toLocaleString()}
                       </span>
-                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${gist.approved ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
-                        {gist.approved ? 'Approved' : 'Pending'}
+                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${confession.approved ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                        {confession.approved ? 'Approved' : 'Pending'}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <button 
-                      onClick={() => approveGist(gist.id, gist.approved)}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${gist.approved ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}
+                      onClick={() => approveConfession(confession.id, confession.approved)}
+                      className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${confession.approved ? 'bg-amber-50 text-amber-600' : 'bg-green-50 text-green-600'}`}
                     >
-                      {gist.approved ? 'Hide' : 'Approve'}
+                      {confession.approved ? 'Hide' : 'Approve'}
                     </button>
                     <button 
-                      onClick={() => deleteGist(gist.id)}
+                      onClick={() => deleteConfession(confession.id)}
                       className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
                     >
                       <Trash2 size={16} />
@@ -380,10 +380,10 @@ export default function AdminPage() {
                 </div>
               ))}
               
-              {gists.length === 0 && (
+              {confessions.length === 0 && (
                 <div className="p-20 text-center space-y-4">
                   <FileText size={48} className="mx-auto text-slate-100" />
-                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No gists found in database.</p>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No confessions found in database.</p>
                 </div>
               )}
             </div>

@@ -41,7 +41,7 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
       sanitizedData.author = sanitizedData.author || '';
       sanitizedData.content = sanitizedData.content || '';
       sanitizedData.author_id = sanitizedData.author_id || '';
-      sanitizedData.category = sanitizedData.category || 'Gist';
+      sanitizedData.category = sanitizedData.category || 'News';
       sanitizedData.url = sanitizedData.url || '';
     } else if (type === 'ad') {
       sanitizedData.name = sanitizedData.name || '';
@@ -375,11 +375,11 @@ const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, title, i
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-500 ml-2">Category</label>
                     <select
-                      value={formData.category || 'Gist'}
+                      value={formData.category || 'News'}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="w-full p-3 rounded-xl bg-slate-50 border border-slate-100 outline-none focus:border-blue-400 font-bold text-slate-600"
                     >
-                      {['Gist', 'News', 'Events', 'Drama', 'Trends'].map(cat => (
+                      {['News', 'Events', 'Drama', 'Trends'].map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
