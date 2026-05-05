@@ -12,13 +12,68 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ totalUsers: 0, submitted: 0, nonSubmitted: 0 });
   const navigate = useNavigate();
 
-  const [view, setView] = useState<'registrations' | 'confessions'>('registrations');
+  const [view, setView] = useState<'registrations' | 'confessions'>('confessions');
   const [confessions, setConfessions] = useState<any[]>([]);
+  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
-    fetchUsers();
-    fetchConfessions();
-  }, []);
+    if (isAuthenticated) {
+      fetchUsers();
+      fetchConfessions();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'ceemedia2026';
+    if (password === correctPassword) {
+      setIsAuthenticated(true);
+      toast.success('Access Granted');
+    } else {
+      toast.error('Invalid Password');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+        <div className="bg-white rounded-[2.5rem] p-10 md:p-16 max-w-md w-full space-y-8 shadow-2xl">
+          <div className="text-center space-y-4">
+            <div className="inline-flex p-4 bg-brand-primary/10 rounded-2xl text-brand-primary">
+              <Shield size={32} />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Admin <span className="text-brand-secondary">Gate</span></h1>
+            <p className="text-slate-500 font-medium text-sm">Enter the super secret password to access the CEE MEDIA dashboard.</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password..."
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl py-4 px-6 outline-none focus:ring-4 focus:ring-brand-primary/5 focus:border-brand-primary transition-all font-mono"
+              />
+            </div>
+            <button 
+              type="submit"
+              className="w-full bg-brand-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-brand-secondary transition-all shadow-xl shadow-brand-primary/20"
+            >
+              Access Portal
+            </button>
+          </form>
+          <button 
+            onClick={() => navigate('/')}
+            className="w-full text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-slate-600 transition-colors"
+          >
+            Go Back Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -175,7 +230,7 @@ export default function AdminPage() {
               <div className="p-3 bg-brand-primary rounded-2xl shadow-lg shadow-brand-primary/20">
                 <Shield className="text-white" size={24} />
               </div>
-              <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Exam Admin <span className="text-brand-secondary">Portal</span></h1>
+              <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">CEE MEDIA <span className="text-brand-secondary">DASHBOARD</span></h1>
             </div>
           </div>
 
@@ -207,16 +262,16 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex space-x-1 bg-slate-200/50 p-1 rounded-2xl w-fit">
           <button 
-            onClick={() => setView('registrations')}
-            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'registrations' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            Registrations
-          </button>
-          <button 
             onClick={() => setView('confessions')}
             className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'confessions' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
           >
             Confessions
+          </button>
+          <button 
+            onClick={() => setView('registrations')}
+            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${view === 'registrations' ? 'bg-white text-brand-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+          >
+             Exam Data
           </button>
         </div>
 
